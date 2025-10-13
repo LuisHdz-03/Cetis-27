@@ -1,8 +1,15 @@
-import { pickerPropsIOS, styles } from "@/constants/asistenciaStyles";
-import { colors } from "@/constants/styles";
-import { Ionicons } from "@expo/vector-icons";
-import { useRef, useState } from "react";
+import AsistenciasModal from "@/components/AsistenciasModal";
 import {
+  iconSizes,
+  pickerPropsIOS,
+  styles,
+} from "@/constants/asistenciaStyles";
+import { colors } from "@/constants/colors";
+import { useAsistencias } from "@/hooks/useAsistencias";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   Text,
@@ -13,13 +20,33 @@ import {
 import RNPickerSelect from "react-native-picker-select";
 
 export default function AsistenciasScreen() {
+  // Estados locales para UI
   const [selectPicker, setSelectPicker] = useState(null);
-  const pickerRef = useRef<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMateria, setSelectedMateria] = useState<string | null>(null);
 
-  const openPicker = () => {
-    if (pickerRef.current) {
-      pickerRef.current.togglePicker();
+  // Hook personalizado para toda la lógica de backend
+  const {
+    asistenciasDetalladas,
+    estadisticasMaterias,
+    materiasParaPicker,
+    isLoading,
+    isLoadingStats,
+    error,
+    fetchAsistenciasDetalladas,
+    getMonthYearString,
+  } = useAsistencias();
+
+  // Cargar datos cuando se abre el modal
+  useEffect(() => {
+    if (modalVisible && selectedMateria) {
+      fetchAsistenciasDetalladas(selectedMateria);
     }
+  }, [modalVisible, selectedMateria]);
+
+  const openModal = (materiaId: string) => {
+    setSelectedMateria(materiaId);
+    setModalVisible(true);
   };
 
   return (
@@ -32,26 +59,15 @@ export default function AsistenciasScreen() {
         <View style={styles.divider} />
 
         {/* Picker de materias */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={openPicker}
-          style={styles.pickerTouchable}
-        >
+        <View style={styles.pickerTouchable}>
           <RNPickerSelect
-            ref={pickerRef}
             placeholder={{
               label: "Selecciona una materia",
               value: null,
             }}
             value={selectPicker}
             onValueChange={(value) => setSelectPicker(value)}
-            items={[
-              { label: "Matemáticas", value: "matematicas" },
-              { label: "Español", value: "espanol" },
-              { label: "Inglés", value: "ingles" },
-              { label: "Historia", value: "historia" },
-              { label: "Física", value: "fisica" },
-            ]}
+            items={materiasParaPicker} //  Datos dinámicos del backend
             style={{
               inputIOS: styles.pickerInput,
               inputAndroid: styles.pickerInput,
@@ -60,18 +76,15 @@ export default function AsistenciasScreen() {
             }}
             useNativeAndroidPickerStyle={false}
             pickerProps={Platform.OS === "ios" ? pickerPropsIOS : {}}
-            touchableWrapperProps={{
-              activeOpacity: 1,
-            }}
             Icon={() => (
               <Ionicons
                 name="chevron-down"
-                size={24}
+                size={iconSizes.chevron}
                 color={colors.gray[600]}
               />
             )}
           />
-        </TouchableOpacity>
+        </View>
 
         {/* Tres cajas de texto */}
         <View style={styles.inputContainer}>
@@ -93,6 +106,100 @@ export default function AsistenciasScreen() {
             keyboardType="numeric"
           />
         </View>
+        <View style={styles.dividerCentral} />
+
+        {/* Cards dinámicas de materias */}
+        {isLoadingStats ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Cargando materias...</Text>
+          </View>
+        ) : estadisticasMaterias.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="school-outline"
+              size={48}
+              color={colors.gray[400]}
+            />
+            <Text style={styles.emptyStateText}>
+              No hay materias registradas
+            </Text>
+          </View>
+        ) : (
+          estadisticasMaterias.map((materia, index) => (
+            <View key={materia.materiaId} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Ionicons
+                  name="book-outline"
+                  size={iconSizes.header}
+                  color={colors.primary}
+                />
+                <Text style={styles.cardTitle}>{materia.materiaNombre}</Text>
+                <TouchableOpacity
+                  style={styles.detailsButton}
+                  onPress={() => openModal(materia.materiaId)}
+                >
+                  <Text style={styles.detailsButtonText}>detalles</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.primary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={iconSizes.stat}
+                    color={colors.verdeAsistencia}
+                  />
+                  <Text style={styles.statLabel}>Asistencias</Text>
+                  <Text style={styles.statValue}>
+                    {materia.totalAsistencias}
+                  </Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <Ionicons
+                    name="time-outline"
+                    size={iconSizes.stat}
+                    color={colors.naranjaRetardos}
+                  />
+                  <Text style={styles.statLabel}>Retardos</Text>
+                  <Text style={styles.statValue}>{materia.totalRetardos}</Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <Ionicons
+                    name="close-circle"
+                    size={iconSizes.stat}
+                    color={colors.rojoFaltas}
+                  />
+                  <Text style={styles.statLabel}>Faltas</Text>
+                  <Text style={styles.statValue}>{materia.totalFaltas}</Text>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+
+        {/* Modal de detalles */}
+        <AsistenciasModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          asistenciasDetalladas={asistenciasDetalladas}
+          estadisticasMaterias={estadisticasMaterias}
+          selectedMateria={selectedMateria}
+          isLoading={isLoading}
+          error={error}
+          getMonthYearString={getMonthYearString}
+        />
       </View>
     </ScrollView>
   );

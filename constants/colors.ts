@@ -16,4 +16,7 @@ export const colors = {
   red: {
     600: "#dc2626",
   },
+  verdeAsistencia: "#10b981",
+  naranjaRetardos: "#f59e0b",
+  rojoFaltas: "#ef4444b9",
 };
