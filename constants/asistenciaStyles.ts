@@ -366,6 +366,12 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600" as const,
   },
+  cellTimeText: {
+    fontSize: 10,
+    fontWeight: "400" as const,
+    color: colors.gray[400],
+    marginTop: 2,
+  },
   cellValue: {
     fontSize: 15,
     fontWeight: "600" as const,

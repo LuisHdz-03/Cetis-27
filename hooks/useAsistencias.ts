@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 export interface AsistenciaDetallada {
   id?: number;
   fecha: string;
+  hora?: string; // Hora de registro (ej: "08:30", "14:15")
   tipo: "asistencia" | "retardo" | "falta";
   descripcion: string;
 }
@@ -171,108 +172,126 @@ export const useAsistencias = () => {
       {
         id: 1,
         fecha: "2025-10-11",
+        hora: "08:15",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 2,
         fecha: "2025-10-10",
+        hora: "08:10",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 3,
         fecha: "2025-10-09",
+        hora: "08:25",
         tipo: "retardo",
         descripcion: "Llegó 15 min tarde",
       },
       {
         id: 4,
         fecha: "2025-10-08",
+        hora: "08:05",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 5,
         fecha: "2025-10-07",
+        hora: "08:20",
         tipo: "retardo",
         descripcion: "Llegó 10 min tarde",
       },
       {
         id: 6,
         fecha: "2025-10-04",
+        hora: "08:12",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 7,
         fecha: "2025-10-03",
+        hora: undefined,
         tipo: "falta",
         descripcion: "No asistió",
       },
       {
         id: 8,
         fecha: "2025-10-02",
+        hora: "08:08",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 9,
         fecha: "2025-10-01",
+        hora: "08:15",
         tipo: "retardo",
         descripcion: "Llegó 5 min tarde",
       },
       {
         id: 10,
         fecha: "2025-09-30",
+        hora: "08:10",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 11,
         fecha: "2025-09-27",
+        hora: "08:05",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 12,
         fecha: "2025-09-26",
+        hora: undefined,
         tipo: "falta",
         descripcion: "No asistió",
       },
       {
         id: 13,
         fecha: "2025-09-25",
+        hora: "08:14",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 14,
         fecha: "2025-09-24",
+        hora: "08:30",
         tipo: "retardo",
         descripcion: "Llegó 20 min tarde",
       },
       {
         id: 15,
         fecha: "2025-09-23",
+        hora: "08:07",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 16,
         fecha: "2025-09-20",
+        hora: "08:11",
         tipo: "asistencia",
         descripcion: "Asistió",
       },
       {
         id: 17,
         fecha: "2025-09-19",
+        hora: undefined,
         tipo: "falta",
         descripcion: "No asistió",
       },
       {
         id: 18,
         fecha: "2025-09-18",
+        hora: "08:09",
         tipo: "asistencia",
         descripcion: "Asistió",
       },

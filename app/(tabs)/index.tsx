@@ -25,11 +25,6 @@ export default function PerfilScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Bienvenido a CETIS-27</Text>
-      <Text style={styles.subtitle}>
-        {user?.username ? `Hola, ${user.username}` : "Pantalla de Perfil"}
-      </Text>
-
       <TouchableOpacity style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Cerrar sesión</Text>
       </TouchableOpacity>

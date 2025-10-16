@@ -49,7 +49,12 @@ export default function AsistenciasModal({
     // Crear objeto con los datos organizados por fecha
     const tabla: Record<
       string,
-      { asistencia: number; retardo: number; falta: number }
+      {
+        asistencia: number;
+        retardo: number;
+        falta: number;
+        hora?: string; // Hora del primer registro de ese día
+      }
     > = {};
 
     fechasUnicas.forEach((fecha) => {
@@ -59,6 +64,10 @@ export default function AsistenciasModal({
     asistenciasDetalladas.forEach((item) => {
       if (tabla[item.fecha]) {
         tabla[item.fecha][item.tipo]++;
+        // Guardar la hora del primer registro encontrado para esa fecha
+        if (!tabla[item.fecha].hora && item.hora) {
+          tabla[item.fecha].hora = item.hora;
+        }
       }
     });
 
@@ -147,6 +156,11 @@ export default function AsistenciasModal({
                       <Text style={styles.cellText}>
                         {formatearFecha(fecha)}
                       </Text>
+                      {tabla[fecha].hora && (
+                        <Text style={styles.cellTimeText}>
+                          {tabla[fecha].hora}
+                        </Text>
+                      )}
                     </View>
                     <View style={styles.cell}>
                       <Text style={styles.cellValue}>

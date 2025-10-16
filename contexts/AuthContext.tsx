@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -30,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,10 +43,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // TEMPORAL: Descomentar esta línea para limpiar el storage y probar el login
       // await AsyncStorage.clear();
 
-      const token = await AsyncStorage.getItem("userToken");
+      const storedToken = await AsyncStorage.getItem("userToken");
       const userData = await AsyncStorage.getItem("userData");
 
-      if (token && userData) {
+      if (storedToken && userData) {
+        setToken(storedToken);
         setUser(JSON.parse(userData));
         setIsAuthenticated(true);
       }
@@ -69,9 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           email: "admin@cetis27.edu.mx",
         };
 
-        await AsyncStorage.setItem("userToken", "fake-jwt-token");
+        const newToken = "fake-jwt-token";
+        await AsyncStorage.setItem("userToken", newToken);
         await AsyncStorage.setItem("userData", JSON.stringify(userData));
 
+        setToken(newToken);
         setUser(userData);
         setIsAuthenticated(true);
         return true;
@@ -87,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await AsyncStorage.removeItem("userToken");
       await AsyncStorage.removeItem("userData");
+      setToken(null);
       setUser(null);
       setIsAuthenticated(false);
     } catch (error) {
@@ -99,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         isAuthenticated,
         user,
+        token,
         login,
         logout,
         loading,
