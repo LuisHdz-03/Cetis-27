@@ -3,11 +3,11 @@
 
 export const MOCK_ESTUDIANTE = {
   numeroControl: "22050123",
-  nombreCompleto: "Juan Pérez García",
+  nombreCompleto: "Albertano Santa Cruz Martínez",
   especialidad: "Programación",
   codigoEspecialidad: "PROG",
   semestre: 3,
-  email: "juan.perez@cetis27.edu.mx",
+  email: "albertano.santa@cetis27.edu.mx",
   telefono: "6441234567",
   codigoQr: "CETIS27-22050123-2022-A1B2C3D4",
   fechaIngreso: "2022-08-15",
@@ -23,10 +23,10 @@ export const MOCK_ESTUDIANTE_COMPLETO = {
   fechaIngreso: "2022-08-15",
   usuario: {
     id: 15,
-    nombre: "Juan",
-    apellidoPaterno: "Pérez",
-    apellidoMaterno: "García",
-    email: "juan.perez@cetis27.edu.mx",
+    nombre: "Albertano",
+    apellidoPaterno: "Santa Cruz",
+    apellidoMaterno: "Martínez",
+    email: "albertano.santa@cetis27.edu.mx",
     telefono: "6441234567",
     fechaNacimiento: "2005-03-15",
     direccion: "Calle Principal #123, Hermosillo, Sonora",

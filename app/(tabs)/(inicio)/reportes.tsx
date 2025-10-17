@@ -14,10 +14,10 @@ import { useReportes } from "@/hooks/useReportes";
 export default function ReportesScreen() {
   // Usar el custom hook
   const {
-    incidencias,
+    reportes,
     isLoading,
     error,
-    fetchIncidencias,
+    fetchReportes,
     getSeverityConfig,
     getStatusConfig,
   } = useReportes();
@@ -28,7 +28,7 @@ export default function ReportesScreen() {
   );
 
   useEffect(() => {
-    fetchIncidencias();
+    fetchReportes();
   }, []);
 
   // Función para expandir/colapsar una card
@@ -60,26 +60,31 @@ export default function ReportesScreen() {
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
               style={styles.retryButton}
-              onPress={fetchIncidencias}
+              onPress={fetchReportes}
             >
               <Text style={styles.retryText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
-        ) : incidencias.length === 0 ? (
-          <View style={styles.centerBox}>
-            <Text style={styles.noDataText}>
-              No hay incidencias registradas
+        ) : reportes.length === 0 ? (
+          <View style={styles.emptyStateBox}>
+            <Ionicons name="checkmark-circle" size={80} color="#10b981" />
+            <Text style={styles.emptyStateTitle}>¡Todo en orden!</Text>
+            <Text style={styles.emptyStateText}>
+              No tienes incidencias registradas.
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              Continúa con tu excelente desempeño 🎉
             </Text>
           </View>
         ) : (
-          incidencias.map((inc) => {
-            const severityConfig = getSeverityConfig(inc.severity);
-            const statusConfig = getStatusConfig(inc.estatus);
-            const isExpanded = expandedCards.has(inc.id);
+          reportes.map((reporte) => {
+            const severityConfig = getSeverityConfig(reporte.gravedad);
+            const statusConfig = getStatusConfig(reporte.estatus);
+            const isExpanded = expandedCards.has(reporte.id);
 
             return (
               <View
-                key={inc.id}
+                key={reporte.id}
                 style={[
                   styles.incidenciaCard,
                   {
@@ -91,7 +96,7 @@ export default function ReportesScreen() {
                 {/* Header clickeable */}
                 <TouchableOpacity
                   style={styles.incidenciaHeader}
-                  onPress={() => toggleCard(inc.id)}
+                  onPress={() => toggleCard(reporte.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.rowCenter}>
@@ -106,7 +111,7 @@ export default function ReportesScreen() {
                         { color: severityConfig.textColor },
                       ]}
                     >
-                      Incidencia Disciplinaria
+                      {reporte.titulo}
                     </Text>
                   </View>
 
@@ -128,7 +133,7 @@ export default function ReportesScreen() {
                             { color: severityConfig.textColor },
                           ]}
                         >
-                          {inc.severity}
+                          {reporte.gravedad}
                         </Text>
                       </View>
                       {/* Badge de Estatus */}
@@ -149,7 +154,7 @@ export default function ReportesScreen() {
                             { color: statusConfig.textColor },
                           ]}
                         >
-                          {inc.estatus}
+                          {reporte.estatus}
                         </Text>
                       </View>
                     </View>
@@ -169,16 +174,31 @@ export default function ReportesScreen() {
                     <View style={styles.detailGroup}>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Tipo:</Text>
-                        <Text style={styles.detailValue}>{inc.tipo}</Text>
+                        <Text style={styles.detailValue}>{reporte.tipo}</Text>
                       </View>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Fecha:</Text>
-                        <Text style={styles.detailValue}>{inc.fecha}</Text>
+                        <Text style={styles.detailValue}>
+                          {new Date(reporte.fechaReporte).toLocaleDateString(
+                            "es-MX",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
+                        </Text>
                       </View>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Reportado por:</Text>
                         <Text style={styles.detailValue}>
-                          {inc.reportadoPor}
+                          {reporte.nombreDocente}
+                        </Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Materia:</Text>
+                        <Text style={styles.detailValue}>
+                          {reporte.nombreMateria} - Grupo {reporte.codigoGrupo}
                         </Text>
                       </View>
                     </View>
@@ -190,10 +210,25 @@ export default function ReportesScreen() {
                           Descripción:
                         </Text>
                         <Text style={styles.descripcionText}>
-                          {inc.descripcion}
+                          {reporte.descripcion}
                         </Text>
                       </View>
                     </View>
+
+                    {/* Acciones tomadas (si existen) */}
+                    {reporte.accionesTomadas && (
+                      <View style={styles.descripcionContainer}>
+                        <View style={styles.orangeBorder} />
+                        <View style={styles.descripcionContent}>
+                          <Text style={styles.descripcionTitle}>
+                            Acciones Tomadas:
+                          </Text>
+                          <Text style={styles.descripcionText}>
+                            {reporte.accionesTomadas}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
                   </>
                 )}
               </View>

@@ -27,9 +27,9 @@ export default function AsistenciasScreen() {
 
   // Hook personalizado para toda la lógica de backend
   const {
-    asistenciasDetalladas,
-    estadisticasMaterias,
-    materiasParaPicker,
+    asistencias,
+    estadisticasGrupos,
+    gruposParaPicker,
     isLoading,
     isLoadingStats,
     error,
@@ -52,61 +52,63 @@ export default function AsistenciasScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        {/* Título */}
-        <Text style={styles.title}>Asistencias</Text>
+        {/* Card de filtros */}
+        <View style={styles.filterCard}>
+          {/* Título */}
+          <Text style={styles.title}>Asistencias</Text>
 
-        {/* Línea separadora */}
-        <View style={styles.divider} />
+          {/* Línea separadora */}
+          <View style={styles.divider} />
 
-        {/* Picker de materias */}
-        <View style={styles.pickerTouchable}>
-          <RNPickerSelect
-            placeholder={{
-              label: "Selecciona una materia",
-              value: null,
-            }}
-            value={selectPicker}
-            onValueChange={(value) => setSelectPicker(value)}
-            items={materiasParaPicker} //  Datos dinámicos del backend
-            style={{
-              inputIOS: styles.pickerInput,
-              inputAndroid: styles.pickerInput,
-              iconContainer: styles.pickerIconContainer,
-              placeholder: styles.pickerPlaceholder,
-            }}
-            useNativeAndroidPickerStyle={false}
-            pickerProps={Platform.OS === "ios" ? pickerPropsIOS : {}}
-            Icon={() => (
-              <Ionicons
-                name="chevron-down"
-                size={iconSizes.chevron}
-                color={colors.gray[600]}
-              />
-            )}
-          />
+          {/* Picker de materias */}
+          <View style={styles.pickerTouchable}>
+            <RNPickerSelect
+              placeholder={{
+                label: "Selecciona una materia",
+                value: null,
+              }}
+              value={selectPicker}
+              onValueChange={(value) => setSelectPicker(value)}
+              items={gruposParaPicker} //  Datos dinámicos del backend
+              style={{
+                inputIOS: styles.pickerInput,
+                inputAndroid: styles.pickerInput,
+                iconContainer: styles.pickerIconContainer,
+                placeholder: styles.pickerPlaceholder,
+              }}
+              useNativeAndroidPickerStyle={false}
+              pickerProps={Platform.OS === "ios" ? pickerPropsIOS : {}}
+              Icon={() => (
+                <Ionicons
+                  name="chevron-down"
+                  size={iconSizes.chevron}
+                  color={colors.gray[600]}
+                />
+              )}
+            />
+          </View>
+
+          {/* Tres cajas de texto */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Dia"
+              placeholderTextColor={colors.gray[400]}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Mes"
+              placeholderTextColor={colors.gray[400]}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="año"
+              placeholderTextColor={colors.gray[400]}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
-
-        {/* Tres cajas de texto */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Dia"
-            placeholderTextColor={colors.gray[400]}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Mes"
-            placeholderTextColor={colors.gray[400]}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="año"
-            placeholderTextColor={colors.gray[400]}
-            keyboardType="numeric"
-          />
-        </View>
-        <View style={styles.dividerCentral} />
 
         {/* Cards dinámicas de materias */}
         {isLoadingStats ? (
@@ -114,30 +116,21 @@ export default function AsistenciasScreen() {
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Cargando materias...</Text>
           </View>
-        ) : estadisticasMaterias.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="school-outline"
-              size={48}
-              color={colors.gray[400]}
-            />
-            <Text style={styles.emptyStateText}>
-              No hay materias registradas
-            </Text>
-          </View>
         ) : (
-          estadisticasMaterias.map((materia, index) => (
-            <View key={materia.materiaId} style={styles.card}>
+          estadisticasGrupos.map((grupo, index) => (
+            <View key={grupo.idGrupo} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Ionicons
                   name="book-outline"
                   size={iconSizes.header}
                   color={colors.primary}
                 />
-                <Text style={styles.cardTitle}>{materia.materiaNombre}</Text>
+                <Text style={styles.cardTitle}>
+                  {grupo.nombreMateria} - Grupo {grupo.codigoGrupo}
+                </Text>
                 <TouchableOpacity
                   style={styles.detailsButton}
-                  onPress={() => openModal(materia.materiaId)}
+                  onPress={() => openModal(String(grupo.idGrupo))}
                 >
                   <Text style={styles.detailsButtonText}>detalles</Text>
                   <Ionicons
@@ -156,9 +149,7 @@ export default function AsistenciasScreen() {
                     color={colors.verdeAsistencia}
                   />
                   <Text style={styles.statLabel}>Asistencias</Text>
-                  <Text style={styles.statValue}>
-                    {materia.totalAsistencias}
-                  </Text>
+                  <Text style={styles.statValue}>{grupo.totalAsistencias}</Text>
                 </View>
 
                 <View style={styles.statDivider} />
@@ -170,7 +161,7 @@ export default function AsistenciasScreen() {
                     color={colors.naranjaRetardos}
                   />
                   <Text style={styles.statLabel}>Retardos</Text>
-                  <Text style={styles.statValue}>{materia.totalRetardos}</Text>
+                  <Text style={styles.statValue}>{grupo.totalRetardos}</Text>
                 </View>
 
                 <View style={styles.statDivider} />
@@ -182,7 +173,7 @@ export default function AsistenciasScreen() {
                     color={colors.rojoFaltas}
                   />
                   <Text style={styles.statLabel}>Faltas</Text>
-                  <Text style={styles.statValue}>{materia.totalFaltas}</Text>
+                  <Text style={styles.statValue}>{grupo.totalFaltas}</Text>
                 </View>
               </View>
             </View>
@@ -193,8 +184,8 @@ export default function AsistenciasScreen() {
         <AsistenciasModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
-          asistenciasDetalladas={asistenciasDetalladas}
-          estadisticasMaterias={estadisticasMaterias}
+          asistenciasDetalladas={asistencias}
+          estadisticasMaterias={estadisticasGrupos}
           selectedMateria={selectedMateria}
           isLoading={isLoading}
           error={error}

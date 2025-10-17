@@ -71,7 +71,6 @@ export function CredencialCard({
 
       {/* PARTE TRASERA */}
       <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
-        {/* Información detallada */}
         <View style={styles.infoContainerBack}>
           <View style={styles.infoRowBack}>
             <Text style={styles.labelBack}>Correo Electrónico</Text>

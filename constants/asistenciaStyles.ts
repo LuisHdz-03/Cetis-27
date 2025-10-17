@@ -11,12 +11,15 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.gray[50],
-    padding: 15,
   },
   content: {
+    padding: 20,
+  },
+  filterCard: {
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
+    marginBottom: 20,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -97,12 +100,12 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
-    marginTop: 20,
+    marginBottom: 15,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     borderWidth: 1,
     borderColor: colors.gray[200],
   },
@@ -115,10 +118,12 @@ export const styles = StyleSheet.create({
     borderBottomColor: colors.primary,
   },
   cardTitle: {
-    fontSize: 20,
+    flex: 1,
+    fontSize: 18,
     fontWeight: "bold",
     color: colors.primary,
     marginLeft: 10,
+    marginRight: 10,
   },
   statsContainer: {
     flexDirection: "row",
@@ -149,7 +154,6 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
   detailsButton: {
-    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.gray[100],
@@ -157,6 +161,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
+    flexShrink: 0,
   },
   detailsButtonText: {
     fontSize: 14,
@@ -235,17 +240,6 @@ export const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     fontWeight: "bold",
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: colors.gray[600],
-    marginTop: 12,
-    textAlign: "center",
   },
   asistenciaItem: {
     flexDirection: "row",

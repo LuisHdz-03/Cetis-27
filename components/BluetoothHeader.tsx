@@ -1,24 +1,54 @@
 import { colors } from "@/constants/colors";
-import { navStyles } from "@/constants/navStyles";
 import { useBluetooth } from "@/contexts/BluetoothContext";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Switch, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: colors.primary,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: colors.white,
+  },
+  bluetoothContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  bluetoothIcon: {
+    marginRight: 8,
+  },
+  bluetoothText: {
+    fontSize: 12,
+    color: colors.white,
+    fontWeight: "600",
+  },
+  bluetoothSwitch: {
+    marginLeft: 8,
+  },
+});
 
 export function BluetoothHeader() {
   const { isEnabled, toggleBluetooth } = useBluetooth();
 
   return (
-    <View style={navStyles.header}>
-      <Text style={navStyles.headerTitle}>CETIS 27</Text>
-      <View style={navStyles.bluetoothContainer}>
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>CETIS 27</Text>
+      <View style={styles.bluetoothContainer}>
         <Ionicons
           name={isEnabled ? "bluetooth" : "bluetooth-outline"}
           size={20}
           color={colors.white}
-          style={navStyles.bluetoothIcon}
+          style={styles.bluetoothIcon}
         />
-        <Text style={navStyles.bluetoothText}>
+        <Text style={styles.bluetoothText}>
           {isEnabled ? "Encendido" : "Apagado"}
         </Text>
         <Switch
@@ -27,7 +57,7 @@ export function BluetoothHeader() {
           ios_backgroundColor={colors.gray[400]}
           onValueChange={toggleBluetooth}
           value={isEnabled}
-          style={navStyles.bluetoothSwitch}
+          style={styles.bluetoothSwitch}
         />
       </View>
     </View>

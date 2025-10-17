@@ -1,14 +1,43 @@
 import { BluetoothHeader } from "@/components/BluetoothHeader";
 import { colors } from "@/constants/colors";
-import { navStyles } from "@/constants/navStyles";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { withLayoutContext } from "expo-router";
 import React from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  tabsContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  tabIndicator: {
+    backgroundColor: colors.primary,
+    height: 3,
+  },
+  tabBar: {
+    backgroundColor: colors.white,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    textTransform: "none",
+  },
+  tabItem: {
+    paddingHorizontal: 16,
+  },
+});
 
 interface TabScreenConfig {
   name: string;
@@ -25,18 +54,18 @@ export function TopTabsLayout({
   initialRouteName,
 }: TopTabsLayoutProps) {
   return (
-    <SafeAreaView style={navStyles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <BluetoothHeader />
-      <View style={navStyles.tabsContainer}>
+      <View style={styles.tabsContainer}>
         <MaterialTopTabs
           initialRouteName={initialRouteName || screens[0]?.name}
           screenOptions={{
-            tabBarIndicatorStyle: navStyles.tabIndicator,
-            tabBarStyle: navStyles.tabBar,
-            tabBarLabelStyle: navStyles.tabLabel,
+            tabBarIndicatorStyle: styles.tabIndicator,
+            tabBarStyle: styles.tabBar,
+            tabBarLabelStyle: styles.tabLabel,
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.gray[600],
-            tabBarItemStyle: navStyles.tabItem,
+            tabBarItemStyle: styles.tabItem,
           }}
         >
           {screens.map((screen) => (

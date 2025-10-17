@@ -1,54 +1,15 @@
 import { useAuth } from "@/contexts/AuthContext";
+import type {
+  Especialidad,
+  Estudiante,
+  EstudianteCompleto,
+  Usuario,
+} from "@/types/database";
 import { useEffect, useState } from "react";
 import { MOCK_ESTUDIANTE, simulateNetworkDelay } from "./mockData";
 
-// Interfaces basadas en tu estructura de BD
-export interface Usuario {
-  id: number;
-  nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
-  email: string;
-  telefono: string;
-  fechaNacimiento: string;
-  direccion: string;
-  tipoUsuario: "estudiante" | "administrador" | "docente";
-  activo: boolean;
-  fechaRegistro: string;
-}
-
-export interface Especialidad {
-  id: number;
-  nombre: string;
-  codigo: string;
-  activo: boolean;
-}
-
-export interface Estudiante {
-  id: number;
-  idUsuario: number;
-  idEspecialidad: number;
-  numeroControl: string;
-  semestreActual: number;
-  codigoQr: string;
-  fechaIngreso: string;
-  // Datos relacionados (joins)
-  usuario?: Usuario;
-  especialidad?: Especialidad;
-}
-
-// Datos completos del estudiante para el QR
-export interface EstudianteCompleto {
-  numeroControl: string;
-  nombreCompleto: string;
-  especialidad: string;
-  codigoEspecialidad: string;
-  semestre: number;
-  email: string;
-  telefono: string;
-  codigoQr: string;
-  fechaIngreso: string;
-}
+// Re-exportar para mantener compatibilidad con código existente
+export type { Especialidad, Estudiante, EstudianteCompleto, Usuario };
 
 export function useEstudiante() {
   const { token } = useAuth(); // Asumiendo que tienes el token en AuthContext

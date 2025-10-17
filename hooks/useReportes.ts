@@ -2,19 +2,25 @@
 // Custom hook para manejar toda la lógica de reportes e incidencias
 
 import { colors } from "@/constants/colors";
+import type {
+  EstatusReporte,
+  GravedadReporte,
+  Reporte,
+  ReporteDetallado,
+  TipoReporte,
+} from "@/types/database";
 import { useState } from "react";
 
-// Interfaces
-export interface Incidencia {
-  id: string | number;
-  severity: "ALTA" | "MEDIA" | "BAJA";
-  estatus: "PENDIENTE" | "REVISADO" | "RESUELTO";
-  tipo: string;
-  fecha: string;
-  reportadoPor: string;
-  descripcion: string;
-}
+// Re-exportar tipos para compatibilidad
+export type {
+  EstatusReporte,
+  GravedadReporte,
+  Reporte,
+  ReporteDetallado,
+  TipoReporte,
+};
 
+// Interfaces auxiliares para configuración de UI
 export interface SeverityConfig {
   bgColor: string;
   borderColor: string;
@@ -35,66 +41,114 @@ export interface StatusConfig {
  */
 export const useReportes = () => {
   // Estados
-  const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
+  const [reportes, setReportes] = useState<ReporteDetallado[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Obtiene las incidencias del alumno
+   * Obtiene los reportes del estudiante
    */
-  const fetchIncidencias = async () => {
+  const fetchReportes = async () => {
     setIsLoading(true);
     setError(null);
 
     // 🔧 MODO DESARROLLO: Datos de ejemplo (eliminar en producción)
     try {
-      const datosEjemplo: Incidencia[] = [
+      const datosEjemplo: ReporteDetallado[] = [
         {
-          id: "1",
-          severity: "ALTA",
-          estatus: "PENDIENTE",
-          tipo: "Falta de respeto grave",
-          fecha: "15 de Marzo, 2024",
-          reportadoPor: "Lic. José Manuel González",
+          id: 1,
+          idEstudiante: 1,
+          idGrupo: 1,
+          idDocente: 5,
+          tipo: "conducta",
+          titulo: "Falta de respeto grave",
           descripcion:
             "El alumno presentó comportamiento inadecuado durante la clase de Programación, interrumpiendo constantemente y mostrando falta de respeto hacia el docente.",
+          fechaReporte: "2024-03-15",
+          gravedad: "ALTA",
+          estatus: "Pendiente",
+          accionesTomadas: null,
+          fechaRegistro: "2024-03-15T10:30:00Z",
+          fechaRevision: null,
+          // Datos relacionados (JOINs)
+          nombreEstudiante: "Juan Pérez García",
+          nombreDocente: "Lic. José Manuel González",
+          nombreMateria: "Programación",
+          codigoGrupo: "A",
         },
         {
-          id: "2",
-          severity: "MEDIA",
-          estatus: "REVISADO",
-          tipo: "Retardo frecuente",
-          fecha: "10 de Marzo, 2024",
-          reportadoPor: "Lic. María González",
+          id: 2,
+          idEstudiante: 1,
+          idGrupo: 2,
+          idDocente: 7,
+          tipo: "conducta",
+          titulo: "Retardo frecuente",
           descripcion:
             "El estudiante ha llegado tarde en múltiples ocasiones sin justificación válida, afectando el desarrollo normal de las clases.",
+          fechaReporte: "2024-03-10",
+          gravedad: "MEDIA",
+          estatus: "revisado",
+          accionesTomadas: "Se envió citatorio a tutor y se aplicó sanción.",
+          fechaRegistro: "2024-03-10T14:20:00Z",
+          fechaRevision: "2024-03-12T09:00:00Z",
+          nombreEstudiante: "Juan Pérez García",
+          nombreDocente: "Lic. María González",
+          nombreMateria: "Matemáticas",
+          codigoGrupo: "B",
         },
         {
-          id: "3",
-          severity: "BAJA",
-          estatus: "RESUELTO",
-          tipo: "Uniforme incompleto",
-          fecha: "5 de Marzo, 2024",
-          reportadoPor: "Prefecto Juan Pérez",
+          id: 3,
+          idEstudiante: 1,
+          idGrupo: 3,
+          idDocente: 3,
+          tipo: "otra",
+          titulo: "Uniforme incompleto",
           descripcion:
             "El alumno asistió a clases sin portar correctamente el uniforme institucional.",
+          fechaReporte: "2024-03-05",
+          gravedad: "BAJA",
+          estatus: "resuelto",
+          accionesTomadas:
+            "El estudiante fue advertido y corrigió la situación. Se aplicó el reglamento escolar.",
+          fechaRegistro: "2024-03-05T08:15:00Z",
+          fechaRevision: "2024-03-05T16:00:00Z",
+          nombreEstudiante: "Juan Pérez García",
+          nombreDocente: "Prefecto Juan Pérez",
+          nombreMateria: "N/A",
+          codigoGrupo: "N/A",
         },
       ];
 
       // Simular delay de red
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      setIncidencias(datosEjemplo);
+      setReportes(datosEjemplo);
       setIsLoading(false);
     } catch (err) {
-      setError("Error al cargar incidencias");
-      console.error("Error fetching incidencias:", err);
+      setError("Error al cargar reportes");
+      console.error("Error fetching reportes:", err);
       setIsLoading(false);
     }
 
-    /* 🚀 MODO PRODUCCIÓN: Descomentar este bloque cuando tengas backend
+    /* 🚀 MODO PRODUCCIÓN: Descomentar cuando tengas backend
     try {
-      // TODO: Reemplazar con tu URL real del backend
-      const response = await fetch("https://tu-api.com/incidencias", {
+      // Endpoint que trae reportes del estudiante con JOINs
+      // Query SQL aproximado:
+      // SELECT r.*, 
+      //        CONCAT(u.nombre, ' ', u.apellidoPaterno, ' ', u.apellidoMaterno) as nombreEstudiante,
+      //        CONCAT(ud.nombre, ' ', ud.apellidoPaterno) as nombreDocente,
+      //        m.nombre as nombreMateria,
+      //        g.codigo as codigoGrupo
+      // FROM reportes r
+      // JOIN estudiantes e ON r.idEstudiante = e.id
+      // JOIN usuarios u ON e.idUsuario = u.id
+      // JOIN docentes d ON r.idDocente = d.id
+      // JOIN usuarios ud ON d.idUsuario = ud.id
+      // JOIN grupos g ON r.idGrupo = g.id
+      // JOIN materias m ON g.idMateria = m.id
+      // WHERE r.idEstudiante = :estudianteId
+      // ORDER BY r.fechaReporte DESC
+      
+      const response = await fetch("https://tu-api.com/estudiante/reportes", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -153,11 +207,13 @@ export const useReportes = () => {
 
   /**
    * Obtiene la configuración de colores según el estatus
+   * Nota: BD usa capitalización mixta ("Pendiente", "revisado", "resuelto")
    */
-  const getStatusConfig = (
-    status: "PENDIENTE" | "REVISADO" | "RESUELTO"
-  ): StatusConfig => {
-    switch (status) {
+  const getStatusConfig = (estatus: EstatusReporte): StatusConfig => {
+    // Normalizar a uppercase para comparación
+    const statusUpper = estatus.toUpperCase();
+
+    switch (statusUpper) {
       case "PENDIENTE":
         return {
           bgColor: colors.yellow[50],
@@ -176,16 +232,23 @@ export const useReportes = () => {
           textColor: colors.greenSuccess[700],
           icon: "checkmark-circle" as const,
         };
+      default:
+        // Fallback para valores inesperados
+        return {
+          bgColor: colors.gray[50],
+          textColor: colors.gray[700],
+          icon: "time" as const,
+        };
     }
   };
 
   return {
     // Estados
-    incidencias,
+    reportes,
     isLoading,
     error,
     // Funciones
-    fetchIncidencias,
+    fetchReportes,
     getSeverityConfig,
     getStatusConfig,
   };
