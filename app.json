@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Esta app necesita acceso a Bluetooth para registrar asistencias mediante dispositivos Bluetooth.",
+        "NSBluetoothPeripheralUsageDescription": "Esta app necesita acceso a Bluetooth para conectarse con dispositivos cercanos.",
+        "NSLocationWhenInUseUsageDescription": "Esta app necesita acceso a la ubicación para escanear dispositivos Bluetooth cercanos."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +23,24 @@
         "monochromeImage": "./assets/images/logoCetis.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADVERTISE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADVERTISE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "package": "com.luis_03.Cetis27"
     },
     "web": {
       "output": "static",
@@ -42,6 +64,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d0e37a8e-5a7b-423c-9bf6-c7210cfdf3ea"
+      }
     }
   }
 }

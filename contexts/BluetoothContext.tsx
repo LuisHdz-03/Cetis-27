@@ -1,7 +1,16 @@
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { BleManager, Device, State } from "react-native-ble-plx";
 
 interface BluetoothContextType {
   isEnabled: boolean;
+  systemState: State;
+  devices: Device[];
   toggleBluetooth: () => void;
 }
 
@@ -10,16 +19,56 @@ const BluetoothContext = createContext<BluetoothContextType | undefined>(
 );
 
 export function BluetoothProvider({ children }: { children: ReactNode }) {
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [isEnabled, setIsEnabled] = useState<boolean>(false);
+  const [systemState, setSystemState] = useState<State>(State.PoweredOff);
+  const [devices, setDevices] = useState<Device[]>([]);
 
-  const toggleBluetooth = () => {
-    setIsEnabled((previousState) => !previousState);
-    // TODO: Aquí puedes agregar la lógica real de Bluetooth
-    // Por ejemplo, conectar/desconectar dispositivo BLE
+  const blBt = new BleManager();
+
+  useEffect(() => {
+    const sub = blBt.onStateChange((state: State) => {
+      setSystemState(state);
+    }, true);
+    return () => {
+      sub.remove();
+      blBt.destroy();
+    };
+  }, []);
+
+  const toggleBluetooth = async () => {
+    if (!isEnabled) {
+      // Solo iniciar escaneo si el Bluetooth está encendido
+      if (systemState === State.PoweredOn) {
+        startScan();
+      }
+    } else {
+      stopScan();
+    }
+    setIsEnabled((prev) => !prev);
+  };
+
+  const startScan = () => {
+    const disp: Device[] = [];
+
+    blBt.startDeviceScan(null, null, (error, device) => {
+      if (error) {
+        return;
+      }
+      if (device && !disp.find((d) => d.id === device.id)) {
+        disp.push(device);
+        setDevices([...disp]);
+      }
+    });
+  };
+
+  const stopScan = () => {
+    blBt.stopDeviceScan();
   };
 
   return (
-    <BluetoothContext.Provider value={{ isEnabled, toggleBluetooth }}>
+    <BluetoothContext.Provider
+      value={{ isEnabled, systemState, devices, toggleBluetooth }}
+    >
       {children}
     </BluetoothContext.Provider>
   );
