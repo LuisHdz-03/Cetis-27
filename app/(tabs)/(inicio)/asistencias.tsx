@@ -5,6 +5,7 @@ import {
   styles,
 } from "@/constants/asistenciaStyles";
 import { colors } from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAsistencias } from "@/hooks/useAsistencias";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -20,6 +21,10 @@ import {
 import RNPickerSelect from "react-native-picker-select";
 
 export default function AsistenciasScreen() {
+  // Obtener el estudianteId del contexto de autenticación
+  const { user } = useAuth();
+  const estudianteId = user?.estudianteId;
+
   // Estados locales para UI
   const [selectPicker, setSelectPicker] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,16 +38,26 @@ export default function AsistenciasScreen() {
     isLoading,
     isLoadingStats,
     error,
+    fetchGruposParaPicker,
+    fetchEstadisticasGrupos,
     fetchAsistenciasDetalladas,
     getMonthYearString,
   } = useAsistencias();
 
+  // Cargar grupos y estadísticas al montar el componente
+  useEffect(() => {
+    if (estudianteId) {
+      fetchGruposParaPicker(estudianteId);
+      fetchEstadisticasGrupos(estudianteId);
+    }
+  }, [estudianteId]);
+
   // Cargar datos cuando se abre el modal
   useEffect(() => {
-    if (modalVisible && selectedMateria) {
-      fetchAsistenciasDetalladas(selectedMateria);
+    if (modalVisible && selectedMateria && estudianteId) {
+      fetchAsistenciasDetalladas(selectedMateria, estudianteId);
     }
-  }, [modalVisible, selectedMateria]);
+  }, [modalVisible, selectedMateria, estudianteId]);
 
   const openModal = (materiaId: string) => {
     setSelectedMateria(materiaId);
@@ -117,8 +132,8 @@ export default function AsistenciasScreen() {
             <Text style={styles.loadingText}>Cargando materias...</Text>
           </View>
         ) : (
-          estadisticasGrupos.map((grupo, index) => (
-            <View key={grupo.idGrupo} style={styles.card}>
+          estadisticasGrupos.map((grupo: any, index) => (
+            <View key={index} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Ionicons
                   name="book-outline"
@@ -130,7 +145,7 @@ export default function AsistenciasScreen() {
                 </Text>
                 <TouchableOpacity
                   style={styles.detailsButton}
-                  onPress={() => openModal(String(grupo.idGrupo))}
+                  onPress={() => openModal(grupo.grupoIdString)}
                 >
                   <Text style={styles.detailsButtonText}>detalles</Text>
                   <Ionicons

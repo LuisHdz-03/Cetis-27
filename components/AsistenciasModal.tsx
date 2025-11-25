@@ -1,9 +1,6 @@
 import { styles } from "@/constants/asistenciaStyles";
 import { colors } from "@/constants/colors";
-import {
-  AsistenciaDetallada,
-  EstadisticasMateria,
-} from "@/hooks/useAsistencias";
+import { Asistencia, EstadisticasGrupo } from "@/hooks/useAsistencias";
 import React from "react";
 import {
   ActivityIndicator,
@@ -17,8 +14,8 @@ import {
 interface AsistenciasModalProps {
   visible: boolean;
   onClose: () => void;
-  asistenciasDetalladas: AsistenciaDetallada[];
-  estadisticasMaterias: EstadisticasMateria[];
+  asistenciasDetalladas: Asistencia[];
+  estadisticasMaterias: EstadisticasGrupo[];
   selectedMateria: string | null;
   isLoading: boolean;
   error: string | null;
@@ -63,10 +60,19 @@ export default function AsistenciasModal({
 
     asistenciasDetalladas.forEach((item) => {
       if (tabla[item.fecha]) {
-        tabla[item.fecha][item.tipo]++;
+        const tipo = item.tipoAsistencia.toLowerCase() as
+          | "asistencia"
+          | "retardo"
+          | "falta";
+        if (
+          tabla[item.fecha] &&
+          (tipo === "asistencia" || tipo === "retardo" || tipo === "falta")
+        ) {
+          tabla[item.fecha][tipo]++;
+        }
         // Guardar la hora del primer registro encontrado para esa fecha
-        if (!tabla[item.fecha].hora && item.hora) {
-          tabla[item.fecha].hora = item.hora;
+        if (!tabla[item.fecha].hora && item.horaRegistro) {
+          tabla[item.fecha].hora = item.horaRegistro;
         }
       }
     });
@@ -78,8 +84,15 @@ export default function AsistenciasModal({
 
   // Función para formatear fecha a DD/MM/AAAA
   const formatearFecha = (fecha: string) => {
-    const [year, month, day] = fecha.split("-");
-    return `${day}/${month}/${year}`;
+    try {
+      const date = new Date(fecha);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return fecha; // Si falla, retornar la fecha original
+    }
   };
 
   return (
@@ -93,8 +106,9 @@ export default function AsistenciasModal({
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {estadisticasMaterias.find((m) => m.materiaId === selectedMateria)
-                ?.materiaNombre || "Materia"}{" "}
+              {estadisticasMaterias.find(
+                (m) => m.grupoIdString === selectedMateria
+              )?.nombreMateria || "Materia"}{" "}
               - {getMonthYearString()}
             </Text>
           </View>
@@ -106,21 +120,29 @@ export default function AsistenciasModal({
           >
             {/* Estado de carga */}
             {isLoading ? (
-              <View style={styles.emptyState}>
+              <View style={{ padding: 40, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={styles.emptyStateText}>
+                <Text
+                  style={{
+                    marginTop: 16,
+                    fontSize: 16,
+                    color: colors.gray[700],
+                  }}
+                >
                   Cargando asistencias...
                 </Text>
               </View>
             ) : error ? (
               /* Estado de error */
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>Error: {error}</Text>
+              <View style={{ padding: 40, alignItems: "center" }}>
+                <Text style={{ fontSize: 16, color: colors.rojoFaltas }}>
+                  Error: {error}
+                </Text>
               </View>
             ) : asistenciasDetalladas.length === 0 ? (
               /* Estado vacío */
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
+              <View style={{ padding: 40, alignItems: "center" }}>
+                <Text style={{ fontSize: 16, color: colors.gray[700] }}>
                   No hay asistencias registradas
                 </Text>
               </View>

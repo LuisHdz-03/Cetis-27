@@ -208,6 +208,7 @@ export interface EstadisticasGrupo {
   totalRetardos: number;
   totalFaltas: number;
   porcentajeAsistencia: number; // Calculado: (asistencias + retardos) / totalClases * 100
+  grupoIdString?: string; // ID del grupo como string (para el picker)
 }
 
 /**

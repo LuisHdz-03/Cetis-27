@@ -1,0 +1,133 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Estudiante {
+  idEstudiante    Int      @id @default(autoincrement())
+  idUsuario       Int
+  idEspecialidad  Int
+  numeroControl   Int @unique
+  curp            String
+  fechaNacimiento DateTime
+  direccion       String
+  telefono        String
+  semestreActual  Int
+  fechaIngreso    DateTime?
+  fechaCreacion   DateTime
+  fechaEdicion    DateTime
+
+  @@map("estudiantes")
+}
+model Usuario {
+  idUsuario         Int      @id @default(autoincrement())
+  nombre            String
+  apellidoPaterno   String
+  apellidoMaterno   String?
+  email             String   @unique
+  password          String
+  tipoUsuario       String
+  productosactivo   Boolean?
+  activo            Boolean?
+  fechaCreacion     DateTime?
+  fechaActualizacion DateTime?
+  telefono          String?
+  fechaNacimiento   DateTime?
+  curp              String?
+  numeroEmpleado    String?
+  especialidad      String?
+  grupo             String?
+  cargo             String?
+  matricula         String?
+
+  @@map("usuarios")
+}
+
+model Inscripcion{
+  idInscripcion	      Int @id @default(autoincrement())
+  idEstudiante	      Int
+  idGrupo	            Int
+  fechaInscripcion	  DateTime
+  activo	            Boolean
+  fechaCreacion       DateTime
+
+  @@map("inscripciones")
+}
+
+model grupo{
+  idGrupo	          Int @id @default(autoincrement())
+  idPeriodo	        Int
+  idDocente	        Int
+  idMateria	        Int
+  idEspecialidad	  Int
+  codigo	          String
+  semestre	        Int
+  aula	            String
+  activo	          Boolean
+  fechaCreacion	    DateTime
+  fechaEdicion      DateTime
+
+  @@map("grupos")
+}
+
+model materia {
+  idMateria	        Int @id @default(autoincrement())
+  idEspecialidad	  Int
+  nombre	          String
+  codigo	          String
+  semestre	        Int
+  horas	            Int
+  activo	          Boolean
+  fechaCreacion	    DateTime
+  fechaEdicion      DateTime
+
+  @@map("materias")
+}
+
+model asistencia {
+  idAsistencia	      Int @id @default(autoincrement())
+  idInscripcion	      Int
+  idDocente	          Int
+  fecha               DateTime	
+  horaRegistro	      DateTime
+  tipoAsistencia	    String
+  observaciones	      String
+  fechaRegistro       DateTime
+
+  @@map("asistencias")
+}
+
+model reporte {
+  idReporte	        Int @id @default(autoincrement())
+  idEstudiante	    Int
+  idGrupo	          Int
+  idDocente	        Int
+  tipo	            String
+  titulo	          String
+  descripcion	      String
+  fechaReporte	    DateTime
+  gravedad	        String
+  estatus	          Boolean
+  accionTomada	    String
+  fechaCreacion	    DateTime
+  fechaRevision     DateTime
+
+  @@map("reportes")
+}
+
+model especialidad {
+  idEspecialidad	  Int @id @default(autoincrement())
+  nombre	          String
+  codigo	          String
+  activo	          Boolean
+  fechaCreacion	    DateTime
+  fechaEdicion      DateTime
+
+  @@map("especialidades")
+}

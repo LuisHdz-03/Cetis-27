@@ -2,12 +2,21 @@
 // Custom hook para manejar toda la lógica de asistencias y backend
 
 import { colors } from "@/constants/colors";
+import { db } from "@/lib/firebase";
 import type {
   Asistencia,
   EstadisticasGrupo,
   TipoAsistencia,
 } from "@/types/database";
-import { useEffect, useState } from "react";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { useState } from "react";
 
 // Re-exportar tipos para compatibilidad
 export type { Asistencia, EstadisticasGrupo, TipoAsistencia };
@@ -42,363 +51,278 @@ export const useAsistencias = () => {
 
   /**
    * Obtiene los grupos inscritos del estudiante para el picker
-   * (En producción, esto vendría de: inscripciones → grupos → materias)
+   * (Lee de: inscripciones → grupos → materias)
    */
-  const fetchGruposParaPicker = async () => {
-    // 🔧 MODO DESARROLLO: Datos de ejemplo (eliminar en producción)
-    setGruposParaPicker([
-      { label: "Programación - Grupo A", value: "1" },
-      { label: "Matemáticas - Grupo B", value: "2" },
-      { label: "Inglés - Grupo A", value: "3" },
-      { label: "Física - Grupo C", value: "4" },
-      { label: "Química - Grupo A", value: "5" },
-      { label: "Historia - Grupo B", value: "6" },
-    ]);
-    return;
-
-    /* 🚀 MODO PRODUCCIÓN: Descomentar cuando tengas backend
+  const fetchGruposParaPicker = async (estudianteId: string) => {
     try {
-      // Endpoint que devuelve los grupos inscritos del estudiante
-      // Query SQL aproximado:
-      // SELECT g.id, m.nombre, g.codigo
-      // FROM inscripciones i
-      // JOIN grupos g ON i.idGrupo = g.id
-      // JOIN materias m ON g.idMateria = m.id
-      // WHERE i.idEstudiante = :estudianteId AND g.activo = true
-      
-      const response = await fetch("https://tu-api.com/estudiante/grupos", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Authorization: `Bearer ${token}`,
-        },
-      });
+      // 1. Obtener inscripciones del estudiante
+      const inscripcionesRef = collection(db, "inscripciones");
+      const qInscripciones = query(
+        inscripcionesRef,
+        where("idEstudiante", "==", estudianteId) // IDs Firestore son strings
+      );
+      const inscripcionesSnap = await getDocs(qInscripciones);
 
-      if (!response.ok) {
-        throw new Error("Error al cargar los grupos");
+      if (inscripcionesSnap.empty) {
+        // ...
+        setGruposParaPicker([]);
+        return;
       }
 
-      const data = await response.json();
-      const opciones: MateriaPickerOption[] = data.map((grupo: any) => ({
-        label: `${grupo.nombreMateria} - Grupo ${grupo.codigoGrupo}`,
-        value: String(grupo.idGrupo),
-      }));
+      const opciones: MateriaPickerOption[] = [];
+
+      // 2. Para cada inscripción, obtener grupo y materia
+      for (const inscripcionDoc of inscripcionesSnap.docs) {
+        const inscripcion = inscripcionDoc.data();
+
+        // Obtener grupo
+        const grupoRef = doc(db, "grupos", String(inscripcion.idGrupo));
+        const grupoSnap = await getDoc(grupoRef);
+
+        if (!grupoSnap.exists()) continue;
+
+        const grupo = grupoSnap.data();
+
+        // Obtener materia
+        // Tolerancia a nombres alternos idMateria / idmateria
+        const materiaId =
+          grupo.idMateria || grupo.idmateria || grupo.id_materia;
+
+        if (!materiaId) {
+          // ...
+          continue;
+        }
+
+        const materiaRef = doc(db, "materias", String(materiaId));
+        const materiaSnap = await getDoc(materiaRef);
+
+        if (!materiaSnap.exists()) continue;
+
+        const materia = materiaSnap.data();
+        const grupoCodigo =
+          grupo.codigo || grupo.code || grupo.clave || "Sin código";
+        const grupoIdValue = grupoRef.id; // usar id real del documento
+
+        opciones.push({
+          label: `${
+            materia.nombre || materia.name || "Materia"
+          } - Grupo ${grupoCodigo}`,
+          value: grupoIdValue,
+        });
+      }
+
       setGruposParaPicker(opciones);
     } catch (err) {
-      console.error("Error fetching grupos:", err);
+      // ...
       setError("Error al cargar los grupos");
     }
-    */
   };
 
   /**
    * Obtiene las estadísticas de asistencia por grupo
-   * (Calculado desde: inscripciones → asistencias)
    */
-  const fetchEstadisticasGrupos = async () => {
+  const fetchEstadisticasGrupos = async (estudianteId: string) => {
     setIsLoadingStats(true);
 
-    // 🔧 MODO DESARROLLO: Datos de ejemplo (eliminar en producción)
-    setEstadisticasGrupos([
-      {
-        idGrupo: 1,
-        idMateria: 1,
-        nombreMateria: "Programación",
-        codigoMateria: "PROG-301",
-        codigoGrupo: "A",
-        semestre: 3,
-        aula: "Lab 1",
-        nombreDocente: "Ing. García",
-        totalClases: 20,
-        totalAsistencias: 15,
-        totalRetardos: 3,
-        totalFaltas: 2,
-        porcentajeAsistencia: 90, // (15+3)/20 * 100
-      },
-      {
-        idGrupo: 2,
-        idMateria: 2,
-        nombreMateria: "Matemáticas",
-        codigoMateria: "MAT-301",
-        codigoGrupo: "B",
-        semestre: 3,
-        aula: "Aula 5",
-        nombreDocente: "Lic. Rodríguez",
-        totalClases: 20,
-        totalAsistencias: 18,
-        totalRetardos: 1,
-        totalFaltas: 1,
-        porcentajeAsistencia: 95,
-      },
-      {
-        idGrupo: 3,
-        idMateria: 3,
-        nombreMateria: "Inglés",
-        codigoMateria: "ING-301",
-        codigoGrupo: "A",
-        semestre: 3,
-        aula: "Aula 3",
-        nombreDocente: "Lic. Martínez",
-        totalClases: 20,
-        totalAsistencias: 16,
-        totalRetardos: 2,
-        totalFaltas: 2,
-        porcentajeAsistencia: 90,
-      },
-      {
-        idGrupo: 4,
-        idMateria: 4,
-        nombreMateria: "Física",
-        codigoMateria: "FIS-301",
-        codigoGrupo: "C",
-        semestre: 3,
-        aula: "Lab 2",
-        nombreDocente: "Ing. López",
-        totalClases: 20,
-        totalAsistencias: 14,
-        totalRetardos: 4,
-        totalFaltas: 2,
-        porcentajeAsistencia: 90,
-      },
-    ]);
-    setIsLoadingStats(false);
-    return;
-
-    /* 🚀 MODO PRODUCCIÓN: Descomentar este bloque cuando tengas backend
     try {
-      // TODO: Reemplazar con tu URL real del backend
-      const response = await fetch("https://tu-api.com/estadisticas/materias", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Authorization: `Bearer ${token}`, // Si usas autenticación
-        },
-      });
+      // 1. Obtener inscripciones del estudiante
+      const inscripcionesRef = collection(db, "inscripciones");
+      const qInscripciones = query(
+        inscripcionesRef,
+        where("idEstudiante", "==", estudianteId)
+      );
+      const inscripcionesSnap = await getDocs(qInscripciones);
 
-      if (!response.ok) {
-        throw new Error("Error al cargar las estadísticas");
+      const estadisticas: EstadisticasGrupo[] = [];
+
+      // 2. Para cada inscripción, obtener estadísticas de asistencia
+      for (const inscripcionDoc of inscripcionesSnap.docs) {
+        const inscripcion = inscripcionDoc.data();
+        const grupoId = String(inscripcion.idGrupo);
+
+        // Obtener datos del grupo
+        const grupoRef = doc(db, "grupos", grupoId);
+        const grupoSnap = await getDoc(grupoRef);
+
+        if (!grupoSnap.exists()) continue;
+
+        const grupo = grupoSnap.data();
+
+        // Obtener datos de la materia
+        const materiaId =
+          grupo.idMateria || grupo.idmateria || grupo.id_materia;
+        if (!materiaId) continue;
+
+        const materiaRef = doc(db, "materias", String(materiaId));
+        const materiaSnap = await getDoc(materiaRef);
+
+        if (!materiaSnap.exists()) continue;
+
+        const materia = materiaSnap.data();
+
+        // Calcular estadísticas reales contando asistencias por tipo
+        const asistenciasRef = collection(db, "asistencia");
+        const qAsistencias = query(
+          asistenciasRef,
+          where("idEstudiante", "==", estudianteId),
+          where("idGrupo", "==", inscripcion.idGrupo)
+        );
+        const asistenciasSnap = await getDocs(qAsistencias);
+
+        // Contar por tipo
+        let totalAsistencias = 0;
+        let totalRetardos = 0;
+        let totalFaltas = 0;
+
+        asistenciasSnap.docs.forEach((docSnap) => {
+          const data = docSnap.data();
+          const tipo = data.tipoAsistencia || data.tipo || "";
+
+          if (tipo === "Asistencia") {
+            totalAsistencias++;
+          } else if (tipo === "Retardo") {
+            totalRetardos++;
+          } else if (tipo === "Falta") {
+            totalFaltas++;
+          }
+        });
+
+        const totalClases = totalAsistencias + totalRetardos + totalFaltas;
+        const porcentajeAsistencia =
+          totalClases > 0
+            ? Math.round(
+                ((totalAsistencias + totalRetardos) / totalClases) * 100
+              )
+            : 0;
+
+        // Obtener datos del docente (opcional)
+        let nombreDocente = "Docente";
+        if (grupo.idDocente) {
+          try {
+            const docenteRef = doc(db, "docentes", String(grupo.idDocente));
+            const docenteSnap = await getDoc(docenteRef);
+            if (docenteSnap.exists()) {
+              const docente = docenteSnap.data();
+              nombreDocente = `${docente.nombre || ""} ${
+                docente.apellidoPaterno || ""
+              } ${docente.apellidoMaterno || ""}`.trim();
+            }
+          } catch (e) {
+            // ...
+          }
+        }
+
+        estadisticas.push({
+          idGrupo: 0,
+          idMateria: 0,
+          nombreMateria: materia.nombre || "Materia",
+          codigoMateria: materia.codigo || materia.clave || "N/A",
+          codigoGrupo: grupo.codigo || "Sin código",
+          semestre: Number(grupo.semestre) || 1,
+          aula: grupo.aula || "N/A",
+          nombreDocente,
+          totalClases,
+          totalAsistencias,
+          totalRetardos,
+          totalFaltas,
+          porcentajeAsistencia,
+          grupoIdString: grupoId, // Agregamos el ID string para el modal
+        } as any);
       }
 
-      const data: EstadisticasMateria[] = await response.json();
-      setEstadisticasMaterias(data);
+      setEstadisticasGrupos(estadisticas);
     } catch (err) {
-      console.error("Error fetching estadísticas:", err);
-      setError("Error al cargar las estadísticas");
+      // ...
+      setError("Error al cargar estadísticas de grupos");
     } finally {
       setIsLoadingStats(false);
     }
-    */
   };
 
   /**
    * Obtiene las asistencias detalladas de un grupo específico
    * @param grupoId - ID del grupo inscrito
+   * @param estudianteId - ID del estudiante
    */
-  const fetchAsistenciasDetalladas = async (grupoId: string) => {
+  const fetchAsistenciasDetalladas = async (
+    grupoId: string,
+    estudianteId: string
+  ) => {
     setIsLoading(true);
     setError(null);
 
-    // 🔧 MODO DESARROLLO: Datos de ejemplo (eliminar en producción)
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Mock data con estructura correcta de BD
-    setAsistencias([
-      {
-        id: 1,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-11",
-        horaRegistro: "08:15:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-10-11T08:15:00Z",
-      },
-      {
-        id: 2,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-10",
-        horaRegistro: "08:10:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-10-10T08:10:00Z",
-      },
-      {
-        id: 3,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-09",
-        horaRegistro: "08:25:00",
-        tipoAsistencia: "Retardo",
-        fechaRegistroAsistencia: "2025-10-09T08:25:00Z",
-      },
-      {
-        id: 4,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-08",
-        horaRegistro: "08:05:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-10-08T08:05:00Z",
-      },
-      {
-        id: 5,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-07",
-        horaRegistro: "08:20:00",
-        tipoAsistencia: "Retardo",
-        fechaRegistroAsistencia: "2025-10-07T08:20:00Z",
-      },
-      {
-        id: 6,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-04",
-        horaRegistro: "08:12:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-10-04T08:12:00Z",
-      },
-      {
-        id: 7,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-03",
-        horaRegistro: "00:00:00",
-        tipoAsistencia: "Falta",
-        fechaRegistroAsistencia: "2025-10-03T00:00:00Z",
-      },
-      {
-        id: 8,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-02",
-        horaRegistro: "08:08:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-10-02T08:08:00Z",
-      },
-      {
-        id: 9,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-10-01",
-        horaRegistro: "08:15:00",
-        tipoAsistencia: "Retardo",
-        fechaRegistroAsistencia: "2025-10-01T08:15:00Z",
-      },
-      {
-        id: 10,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-30",
-        horaRegistro: "08:10:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-30T08:10:00Z",
-      },
-      {
-        id: 11,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-27",
-        horaRegistro: "08:05:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-27T08:05:00Z",
-      },
-      {
-        id: 12,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-26",
-        horaRegistro: "00:00:00",
-        tipoAsistencia: "Falta",
-        fechaRegistroAsistencia: "2025-09-26T00:00:00Z",
-      },
-      {
-        id: 13,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-25",
-        horaRegistro: "08:14:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-25T08:14:00Z",
-      },
-      {
-        id: 14,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-24",
-        horaRegistro: "08:30:00",
-        tipoAsistencia: "Retardo",
-        fechaRegistroAsistencia: "2025-09-24T08:30:00Z",
-      },
-      {
-        id: 15,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-23",
-        horaRegistro: "08:07:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-23T08:07:00Z",
-      },
-      {
-        id: 16,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-20",
-        horaRegistro: "08:11:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-20T08:11:00Z",
-      },
-      {
-        id: 17,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-19",
-        horaRegistro: "00:00:00",
-        tipoAsistencia: "Falta",
-        fechaRegistroAsistencia: "2025-09-19T00:00:00Z",
-      },
-      {
-        id: 18,
-        idInscripcion: 1,
-        idDocente: 5,
-        fecha: "2025-09-18",
-        horaRegistro: "08:09:00",
-        tipoAsistencia: "Asistencia",
-        fechaRegistroAsistencia: "2025-09-18T08:09:00Z",
-      },
-    ]);
-    setIsLoading(false);
-    return;
-
-    /* 🚀 MODO PRODUCCIÓN: Descomentar este bloque cuando tengas backend
     try {
-      const response = await fetch(
-        `https://tu-api-real.com/asistencias/${materiaId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${token}`, // Si usas autenticación
-          },
-        }
+      const asistenciasRef = collection(db, "asistencia");
+
+      const qAsistencias = query(
+        asistenciasRef,
+        where("idEstudiante", "==", estudianteId),
+        where("idGrupo", "==", grupoId)
+        // orderBy("fecha", "desc") // Comentado temporalmente hasta que se cree el índice
       );
 
-      if (!response.ok) {
-        throw new Error("Error al cargar las asistencias");
-      }
+      const asistenciasSnap = await getDocs(qAsistencias);
 
-      const data: AsistenciaDetallada[] = await response.json();
-      setAsistenciasDetalladas(data);
+      const asistenciasData: Asistencia[] = asistenciasSnap.docs
+        .map((docSnap, idx) => {
+          const data = docSnap.data();
+
+          // Convertir Timestamps de Firestore a strings ISO
+          const fecha = data.fecha?.toDate
+            ? data.fecha.toDate().toISOString()
+            : data.fecha || data.dia || "";
+
+          const fechaRegistro = data.creadoEn?.toDate
+            ? data.creadoEn.toDate().toISOString()
+            : data.fechaRegistroAsistencia?.toDate
+            ? data.fechaRegistroAsistencia.toDate().toISOString()
+            : data.timestamp || "";
+
+          // Extraer hora del Timestamp fecha
+          const horaRegistro = data.fecha?.toDate
+            ? data.fecha.toDate().toLocaleTimeString("es-MX", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : data.horaRegistro || data.hora || "";
+
+          return {
+            id: idx + 1,
+            idInscripcion: idx + 1,
+            idDocente: Number(data.idDocente) || 0,
+            fecha: fecha,
+            horaRegistro: horaRegistro,
+            tipoAsistencia: (data.tipoAsistencia ||
+              data.tipo ||
+              "Falta") as TipoAsistencia,
+            fechaRegistroAsistencia: fechaRegistro,
+            fechaTimestamp: data.fecha?.toDate
+              ? data.fecha.toDate()
+              : new Date(fecha),
+          } as Asistencia & { fechaTimestamp: Date };
+        })
+        .sort((a, b) => {
+          // Ordenar manualmente por fecha descendente
+          return (
+            (b as any).fechaTimestamp.getTime() -
+            (a as any).fechaTimestamp.getTime()
+          );
+        })
+        .map((item, idx) => {
+          // Remover fechaTimestamp temporal y reasignar IDs
+          const { fechaTimestamp, ...asistencia } = item as any;
+          return { ...asistencia, id: idx + 1, idInscripcion: idx + 1 };
+        });
+
+      setAsistencias(asistenciasData);
     } catch (err) {
-      console.error("Error fetching asistencias:", err);
-      setError(
-        err instanceof Error ? err.message : "Error desconocido al cargar datos"
-      );
+      // ...
+      setError("Error al cargar las asistencias");
+      setAsistencias([]);
     } finally {
       setIsLoading(false);
     }
-    */
-
-    // FIN DE CÓDIGO COMENTADO
   };
 
   /**
@@ -406,7 +330,7 @@ export const useAsistencias = () => {
    * @param tipo - Tipo de asistencia
    */
   const getIconForTipo = (tipo: string): IconData => {
-    switch (tipo) {
+    switch (tipo.toLowerCase()) {
       case "asistencia":
         return {
           name: "checkmark-circle" as const,
@@ -435,7 +359,6 @@ export const useAsistencias = () => {
    * En producción, esto podría venir de la API (periodo académico actual)
    */
   const getMonthYearString = () => {
-    // 🔧 MODO DESARROLLO: Usa fecha actual del sistema
     const meses = [
       "Enero",
       "Febrero",
@@ -454,20 +377,14 @@ export const useAsistencias = () => {
     const mes = meses[fecha.getMonth()];
     const año = fecha.getFullYear();
     return `${mes} ${año}`;
-
-    /* 🚀 MODO PRODUCCIÓN: Podría venir del backend
-    // La API podría retornar el periodo académico actual
-    // Por ejemplo: "Octubre 2025" o "Semestre 2025-1"
-    */
   };
 
   /**
    * Carga inicial de datos al montar el componente
+   * Nota: Ambas funciones ahora requieren estudianteId como parámetro
+   * Se deben llamar manualmente cuando se conozca el ID del estudiante
    */
-  useEffect(() => {
-    fetchGruposParaPicker();
-    fetchEstadisticasGrupos();
-  }, []);
+  // useEffect removido - se llama manualmente desde el componente
 
   // Retorna todos los estados y funciones
   return {

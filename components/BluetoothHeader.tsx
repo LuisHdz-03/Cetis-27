@@ -1,5 +1,4 @@
 import { colors } from "@/constants/colors";
-import { useBluetooth } from "@/contexts/BluetoothContext";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
@@ -36,7 +35,9 @@ const styles = StyleSheet.create({
 });
 
 export function BluetoothHeader() {
-  const { isEnabled, toggleBluetooth } = useBluetooth();
+  // Simulación para Expo Go: estado local
+  const [isEnabled, setIsEnabled] = React.useState(false);
+  const toggleBluetooth = () => setIsEnabled((prev) => !prev);
 
   return (
     <View style={styles.header}>
