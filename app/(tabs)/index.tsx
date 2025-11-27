@@ -167,19 +167,17 @@ export default function PerfilScreen() {
           </>
         ) : null}
 
-        {estudiante && (
-          <View style={styles.logoutContainer}>
-            <TouchableOpacity style={styles.button} onPress={handleLogout}>
-              <Ionicons
-                name="log-out"
-                size={20}
-                color={colors.white}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.buttonText}>Cerrar sesión</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.logoutContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleLogout}>
+            <Ionicons
+              name="log-out"
+              size={20}
+              color={colors.white}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.buttonText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
