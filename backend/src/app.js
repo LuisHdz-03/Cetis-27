@@ -5,6 +5,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
 // Rutas de ejemplo
 app.get("/", (req, res) => {
   res.send("API funcionando");

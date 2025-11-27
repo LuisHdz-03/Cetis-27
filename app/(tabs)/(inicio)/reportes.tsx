@@ -73,7 +73,7 @@ export default function ReportesScreen() {
               No tienes incidencias registradas.
             </Text>
             <Text style={styles.emptyStateSubtext}>
-              Continúa con tu excelente desempeño 🎉
+              Continúa con tu excelente desempeño
             </Text>
           </View>
         ) : (

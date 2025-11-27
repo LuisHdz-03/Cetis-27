@@ -1,7 +1,9 @@
 import { colors } from "@/constants/colors";
 import { styles } from "@/constants/credencialStyles";
+import { useEstudiante } from "@/hooks/useEstudiante";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View, ViewStyle } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 
 interface EstudianteData {
@@ -28,6 +30,7 @@ export function CredencialCard({
   frontAnimatedStyle,
   backAnimatedStyle,
 }: CredencialCardProps) {
+  const { qrData } = useEstudiante();
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -79,22 +82,62 @@ export function CredencialCard({
             </Text>
           </View>
 
-          <View style={styles.infoRowBack}>
-            <Text style={styles.labelBack}>Teléfono</Text>
-            <Text style={styles.valueBack}>{estudiante.telefono}</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              marginBottom: 10,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={styles.infoRowBack}>
+                <Text style={styles.labelBack}>Teléfono</Text>
+                <Text style={styles.valueBack}>{estudiante.telefono}</Text>
+              </View>
+              <View style={styles.infoRowBack}>
+                <Text style={styles.labelBack}>Fecha de Ingreso</Text>
+                <Text style={styles.valueBack}>
+                  {estudiante.fechaIngreso && estudiante.fechaIngreso !== "N/A"
+                    ? (() => {
+                        const fechaRaw = estudiante.fechaIngreso;
+                        const fechaISO = fechaRaw.includes("T")
+                          ? fechaRaw
+                          : fechaRaw.replace(" ", "T");
+                        const fecha = new Date(fechaISO);
+                        return isNaN(fecha.getTime())
+                          ? "Sin fecha"
+                          : fecha.toLocaleDateString("es-MX", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            });
+                      })()
+                    : "Sin fecha"}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                marginLeft: 12,
+                marginTop: -16,
+              }}
+            >
+              {qrData ? (
+                <QRCode
+                  value={qrData}
+                  size={100}
+                  color={colors.primary}
+                  backgroundColor={colors.white}
+                />
+              ) : (
+                <Text style={{ color: colors.white, fontSize: 12 }}>
+                  Sin QR
+                </Text>
+              )}
+            </View>
           </View>
-
-          <View style={styles.infoRowBack}>
-            <Text style={styles.labelBack}>Fecha de Ingreso</Text>
-            <Text style={styles.valueBack}>
-              {new Date(estudiante.fechaIngreso).toLocaleDateString("es-MX", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </Text>
-          </View>
-
           <View style={styles.dividerBack} />
         </View>
       </Animated.View>

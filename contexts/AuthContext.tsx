@@ -1,22 +1,15 @@
-import { auth, db } from "@/lib/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User as FirebaseUser,
-} from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  firebaseUser: FirebaseUser | null;
   token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   loading: boolean;
+  error: string | null;
 }
 
 interface User {
@@ -40,153 +33,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Escuchar cambios en el estado de autenticación de Firebase
+  // Aquí podrías agregar lógica para verificar si hay un JWT guardado en AsyncStorage
+  // y establecer el usuario autenticado si existe
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Usuario autenticado
-        const idToken = await firebaseUser.getIdToken();
-
-        // Buscar el estudianteId en AsyncStorage o Firestore
-        let storedEstudianteId = await AsyncStorage.getItem("estudianteId");
-
-        // Si no está en AsyncStorage, buscar en Firestore usando la estructura: usuarios -> estudiantes
-        if (!storedEstudianteId) {
-          try {
-            // Paso 1: Buscar el documento de usuario por authUid
-            const usuariosRef = collection(db, "usuarios");
-            const qUsuario = query(
-              usuariosRef,
-              where("authUid", "==", firebaseUser.uid)
-            );
-            const usuarioSnap = await getDocs(qUsuario);
-
-            if (!usuarioSnap.empty) {
-              const usuarioId = usuarioSnap.docs[0].id;
-
-              // Paso 2: Buscar el estudiante vinculado a ese usuario
-              const estudiantesRef = collection(db, "estudiantes");
-              const qEstudiante = query(
-                estudiantesRef,
-                where("idUsuario", "==", usuarioId)
-              );
-              const estudianteSnap = await getDocs(qEstudiante);
-
-              if (!estudianteSnap.empty) {
-                storedEstudianteId = estudianteSnap.docs[0].id;
-                await AsyncStorage.setItem("estudianteId", storedEstudianteId);
-              } else {
-                // ...
-              }
-            } else {
-              // ...
-            }
-          } catch (e) {
-            // ...
-          }
-        }
-
-        const userData: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          estudianteId: storedEstudianteId || undefined,
-        };
-
-        setFirebaseUser(firebaseUser);
-        setUser(userData);
-        setToken(idToken);
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        setToken(token);
         setIsAuthenticated(true);
-      } else {
-        // Usuario no autenticado
-        setFirebaseUser(null);
-        setUser(null);
-        setToken(null);
-        setIsAuthenticated(false);
+        // Aquí podrías agregar lógica para obtener el usuario desde el backend
       }
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    checkAuth();
   }, []);
 
+  // Nuevo login usando el backend con JWT
   const login = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
     try {
-      // Login real con Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firebaseUser = userCredential.user;
-      const idToken = await firebaseUser.getIdToken();
-
-      // Buscar estudiante usando la estructura: usuarios -> estudiantes
-      let estudianteId: string | undefined = undefined;
-      try {
-        // Paso 1: Buscar el documento de usuario por authUid
-        const usuariosRef = collection(db, "usuarios");
-        const qUsuario = query(
-          usuariosRef,
-          where("authUid", "==", firebaseUser.uid)
+      const response = await fetch("http://192.168.1.87:3001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!response.ok) throw new Error("Credenciales incorrectas");
+      const data = await response.json();
+      // Guarda el token JWT en AsyncStorage o SecureStore
+      await AsyncStorage.setItem("token", data.token);
+      // Si es estudiante, guarda el idEstudiante numérico
+      if (
+        typeof data.user.idEstudiante === "number" &&
+        !isNaN(data.user.idEstudiante)
+      ) {
+        await AsyncStorage.setItem(
+          "estudianteId",
+          String(data.user.idEstudiante)
         );
-        const usuarioSnap = await getDocs(qUsuario);
-
-        if (!usuarioSnap.empty) {
-          const usuarioId = usuarioSnap.docs[0].id;
-
-          // Paso 2: Buscar el estudiante vinculado a ese usuario
-          const estudiantesRef = collection(db, "estudiantes");
-          const qEstudiante = query(
-            estudiantesRef,
-            where("idUsuario", "==", usuarioId)
-          );
-          const estudianteSnap = await getDocs(qEstudiante);
-
-          if (!estudianteSnap.empty) {
-            estudianteId = estudianteSnap.docs[0].id;
-            await AsyncStorage.setItem("estudianteId", estudianteId);
-          } else {
-            // ...
-          }
-        } else {
-          // ...
-        }
-      } catch (e) {
-        // ...
+      } else {
+        await AsyncStorage.removeItem("estudianteId");
       }
-
-      const userData: User = {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        estudianteId: estudianteId,
-      };
-
-      setFirebaseUser(firebaseUser);
-      setUser(userData);
-      setToken(idToken);
+      setUser({
+        id: data.user.idUsuario,
+        email: data.user.email,
+        estudianteId: data.user.idEstudiante,
+      });
+      setToken(data.token);
       setIsAuthenticated(true);
-
       return true;
     } catch (error) {
-      // ...
+      setError("Error al iniciar sesión");
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      await signOut(auth);
-      await AsyncStorage.removeItem("estudianteId");
-      setFirebaseUser(null);
-      setToken(null);
+      await AsyncStorage.removeItem("token");
       setUser(null);
+      setToken(null);
       setIsAuthenticated(false);
     } catch (error) {
-      // ...
+      setError("Error al cerrar sesión");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -195,11 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         isAuthenticated,
         user,
-        firebaseUser,
         token,
         login,
         logout,
         loading,
+        error,
       }}
     >
       {children}

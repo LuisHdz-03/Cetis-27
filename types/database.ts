@@ -125,6 +125,7 @@ export interface Asistencia {
   fecha: string; // Fecha de la clase (YYYY-MM-DD)
   horaRegistro: string; // Hora en que se tomó asistencia (HH:mm:ss)
   tipoAsistencia: TipoAsistencia; // "Asistencia", "Retardo", "Falta"
+  observaciones: string; // Observaciones de la asistencia
   fechaRegistroAsistencia: string; // Timestamp completo del registro
   // Relaciones opcionales (JOINs)
   inscripcion?: Inscripcion;

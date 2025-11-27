@@ -23,6 +23,9 @@ model Estudiante {
   fechaCreacion   DateTime
   fechaEdicion    DateTime
 
+  usuario         Usuario  @relation(fields: [idUsuario], references: [idUsuario])
+  especialidad    especialidad @relation(fields: [idEspecialidad], references: [idEspecialidad])
+
   @@map("estudiantes")
 }
 model Usuario {
@@ -46,6 +49,8 @@ model Usuario {
   cargo             String?
   matricula         String?
 
+
+  estudiantes Estudiante[]
   @@map("usuarios")
 }
 
@@ -129,5 +134,6 @@ model especialidad {
   fechaCreacion	    DateTime
   fechaEdicion      DateTime
 
+  estudiantes Estudiante[]
   @@map("especialidades")
 }

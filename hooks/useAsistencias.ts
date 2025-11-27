@@ -2,21 +2,12 @@
 // Custom hook para manejar toda la lógica de asistencias y backend
 
 import { colors } from "@/constants/colors";
-import { db } from "@/lib/firebase";
 import type {
   Asistencia,
   EstadisticasGrupo,
   TipoAsistencia,
 } from "@/types/database";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import { useState } from "react";
+import { useState } from "react"; // Eliminar import duplicado
 
 // Re-exportar tipos para compatibilidad
 export type { Asistencia, EstadisticasGrupo, TipoAsistencia };
@@ -56,64 +47,43 @@ export const useAsistencias = () => {
   const fetchGruposParaPicker = async (estudianteId: string) => {
     try {
       // 1. Obtener inscripciones del estudiante
-      const inscripcionesRef = collection(db, "inscripciones");
-      const qInscripciones = query(
-        inscripcionesRef,
-        where("idEstudiante", "==", estudianteId) // IDs Firestore son strings
+      const resInscripciones = await fetch(
+        `http://localhost:3001/api/inscripciones?estudianteId=${estudianteId}`
       );
-      const inscripcionesSnap = await getDocs(qInscripciones);
-
-      if (inscripcionesSnap.empty) {
-        // ...
+      if (!resInscripciones.ok)
+        throw new Error("Error al obtener inscripciones");
+      const inscripciones = await resInscripciones.json();
+      if (!inscripciones || inscripciones.length === 0) {
         setGruposParaPicker([]);
         return;
       }
 
+      // 2. Obtener todos los grupos y materias necesarios en paralelo
+      const grupoIds = inscripciones.map((i: any) => i.idGrupo);
+      const resGrupos = await fetch(`http://localhost:3001/api/grupos`);
+      if (!resGrupos.ok) throw new Error("Error al obtener grupos");
+      const grupos = await resGrupos.json();
+      const resMaterias = await fetch(`http://localhost:3001/api/materias`);
+      if (!resMaterias.ok) throw new Error("Error al obtener materias");
+      const materias = await resMaterias.json();
+
       const opciones: MateriaPickerOption[] = [];
-
-      // 2. Para cada inscripción, obtener grupo y materia
-      for (const inscripcionDoc of inscripcionesSnap.docs) {
-        const inscripcion = inscripcionDoc.data();
-
-        // Obtener grupo
-        const grupoRef = doc(db, "grupos", String(inscripcion.idGrupo));
-        const grupoSnap = await getDoc(grupoRef);
-
-        if (!grupoSnap.exists()) continue;
-
-        const grupo = grupoSnap.data();
-
-        // Obtener materia
-        // Tolerancia a nombres alternos idMateria / idmateria
-        const materiaId =
-          grupo.idMateria || grupo.idmateria || grupo.id_materia;
-
-        if (!materiaId) {
-          // ...
-          continue;
-        }
-
-        const materiaRef = doc(db, "materias", String(materiaId));
-        const materiaSnap = await getDoc(materiaRef);
-
-        if (!materiaSnap.exists()) continue;
-
-        const materia = materiaSnap.data();
+      for (const inscripcion of inscripciones) {
+        const grupo = grupos.find((g: any) => g.id === inscripcion.idGrupo);
+        if (!grupo) continue;
+        const materia = materias.find((m: any) => m.id === grupo.idMateria);
+        if (!materia) continue;
         const grupoCodigo =
           grupo.codigo || grupo.code || grupo.clave || "Sin código";
-        const grupoIdValue = grupoRef.id; // usar id real del documento
-
         opciones.push({
           label: `${
             materia.nombre || materia.name || "Materia"
           } - Grupo ${grupoCodigo}`,
-          value: grupoIdValue,
+          value: String(grupo.id),
         });
       }
-
       setGruposParaPicker(opciones);
     } catch (err) {
-      // ...
       setError("Error al cargar los grupos");
     }
   };
@@ -123,70 +93,56 @@ export const useAsistencias = () => {
    */
   const fetchEstadisticasGrupos = async (estudianteId: string) => {
     setIsLoadingStats(true);
-
     try {
       // 1. Obtener inscripciones del estudiante
-      const inscripcionesRef = collection(db, "inscripciones");
-      const qInscripciones = query(
-        inscripcionesRef,
-        where("idEstudiante", "==", estudianteId)
+      const resInscripciones = await fetch(
+        `http://localhost:3001/api/inscripciones?estudianteId=${estudianteId}`
       );
-      const inscripcionesSnap = await getDocs(qInscripciones);
+      if (!resInscripciones.ok)
+        throw new Error("Error al obtener inscripciones");
+      const inscripciones = await resInscripciones.json();
+      if (!inscripciones || inscripciones.length === 0) {
+        setEstadisticasGrupos([]);
+        setIsLoadingStats(false);
+        return;
+      }
+      // 2. Obtener todos los grupos, materias y docentes necesarios
+      const grupoIds = inscripciones.map((i: any) => i.idGrupo);
+      const resGrupos = await fetch(`http://localhost:3001/api/grupos`);
+      if (!resGrupos.ok) throw new Error("Error al obtener grupos");
+      const grupos = await resGrupos.json();
+      const resMaterias = await fetch(`http://localhost:3001/api/materias`);
+      if (!resMaterias.ok) throw new Error("Error al obtener materias");
+      const materias = await resMaterias.json();
+      const resDocentes = await fetch(`http://localhost:3001/api/usuarios`);
+      if (!resDocentes.ok) throw new Error("Error al obtener docentes");
+      const docentes = await resDocentes.json();
+      // 3. Obtener todas las asistencias del estudiante
+      const resAsistencias = await fetch(
+        `http://localhost:3001/api/asistencias?estudianteId=${estudianteId}`
+      );
+      if (!resAsistencias.ok) throw new Error("Error al obtener asistencias");
+      const asistencias = await resAsistencias.json();
 
       const estadisticas: EstadisticasGrupo[] = [];
-
-      // 2. Para cada inscripción, obtener estadísticas de asistencia
-      for (const inscripcionDoc of inscripcionesSnap.docs) {
-        const inscripcion = inscripcionDoc.data();
-        const grupoId = String(inscripcion.idGrupo);
-
-        // Obtener datos del grupo
-        const grupoRef = doc(db, "grupos", grupoId);
-        const grupoSnap = await getDoc(grupoRef);
-
-        if (!grupoSnap.exists()) continue;
-
-        const grupo = grupoSnap.data();
-
-        // Obtener datos de la materia
-        const materiaId =
-          grupo.idMateria || grupo.idmateria || grupo.id_materia;
-        if (!materiaId) continue;
-
-        const materiaRef = doc(db, "materias", String(materiaId));
-        const materiaSnap = await getDoc(materiaRef);
-
-        if (!materiaSnap.exists()) continue;
-
-        const materia = materiaSnap.data();
-
-        // Calcular estadísticas reales contando asistencias por tipo
-        const asistenciasRef = collection(db, "asistencia");
-        const qAsistencias = query(
-          asistenciasRef,
-          where("idEstudiante", "==", estudianteId),
-          where("idGrupo", "==", inscripcion.idGrupo)
+      for (const inscripcion of inscripciones) {
+        const grupo = grupos.find((g: any) => g.id === inscripcion.idGrupo);
+        if (!grupo) continue;
+        const materia = materias.find((m: any) => m.id === grupo.idMateria);
+        if (!materia) continue;
+        const grupoId = String(grupo.id);
+        // Filtrar asistencias de este grupo
+        const asistenciasGrupo = asistencias.filter(
+          (a: any) => a.idGrupo === grupo.id
         );
-        const asistenciasSnap = await getDocs(qAsistencias);
-
-        // Contar por tipo
         let totalAsistencias = 0;
         let totalRetardos = 0;
         let totalFaltas = 0;
-
-        asistenciasSnap.docs.forEach((docSnap) => {
-          const data = docSnap.data();
-          const tipo = data.tipoAsistencia || data.tipo || "";
-
-          if (tipo === "Asistencia") {
-            totalAsistencias++;
-          } else if (tipo === "Retardo") {
-            totalRetardos++;
-          } else if (tipo === "Falta") {
-            totalFaltas++;
-          }
+        asistenciasGrupo.forEach((a: any) => {
+          if (a.tipoAsistencia === "Asistencia") totalAsistencias++;
+          else if (a.tipoAsistencia === "Retardo") totalRetardos++;
+          else if (a.tipoAsistencia === "Falta") totalFaltas++;
         });
-
         const totalClases = totalAsistencias + totalRetardos + totalFaltas;
         const porcentajeAsistencia =
           totalClases > 0
@@ -194,27 +150,18 @@ export const useAsistencias = () => {
                 ((totalAsistencias + totalRetardos) / totalClases) * 100
               )
             : 0;
-
-        // Obtener datos del docente (opcional)
+        // Docente
         let nombreDocente = "Docente";
         if (grupo.idDocente) {
-          try {
-            const docenteRef = doc(db, "docentes", String(grupo.idDocente));
-            const docenteSnap = await getDoc(docenteRef);
-            if (docenteSnap.exists()) {
-              const docente = docenteSnap.data();
-              nombreDocente = `${docente.nombre || ""} ${
-                docente.apellidoPaterno || ""
-              } ${docente.apellidoMaterno || ""}`.trim();
-            }
-          } catch (e) {
-            // ...
-          }
+          const docente = docentes.find((d: any) => d.id === grupo.idDocente);
+          if (docente)
+            nombreDocente = `${docente.nombre || ""} ${
+              docente.apellidoPaterno || ""
+            } ${docente.apellidoMaterno || ""}`.trim();
         }
-
         estadisticas.push({
-          idGrupo: 0,
-          idMateria: 0,
+          idGrupo: grupo.id,
+          idMateria: grupo.idMateria,
           nombreMateria: materia.nombre || "Materia",
           codigoMateria: materia.codigo || materia.clave || "N/A",
           codigoGrupo: grupo.codigo || "Sin código",
@@ -226,13 +173,11 @@ export const useAsistencias = () => {
           totalRetardos,
           totalFaltas,
           porcentajeAsistencia,
-          grupoIdString: grupoId, // Agregamos el ID string para el modal
-        } as any);
+          grupoIdString: grupoId,
+        });
       }
-
       setEstadisticasGrupos(estadisticas);
     } catch (err) {
-      // ...
       setError("Error al cargar estadísticas de grupos");
     } finally {
       setIsLoadingStats(false);
@@ -250,74 +195,35 @@ export const useAsistencias = () => {
   ) => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const asistenciasRef = collection(db, "asistencia");
-
-      const qAsistencias = query(
-        asistenciasRef,
-        where("idEstudiante", "==", estudianteId),
-        where("idGrupo", "==", grupoId)
-        // orderBy("fecha", "desc") // Comentado temporalmente hasta que se cree el índice
+      // Obtener asistencias filtradas por estudiante y grupo
+      const res = await fetch(
+        `http://192.168.1.87:3001/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`
       );
-
-      const asistenciasSnap = await getDocs(qAsistencias);
-
-      const asistenciasData: Asistencia[] = asistenciasSnap.docs
-        .map((docSnap, idx) => {
-          const data = docSnap.data();
-
-          // Convertir Timestamps de Firestore a strings ISO
-          const fecha = data.fecha?.toDate
-            ? data.fecha.toDate().toISOString()
-            : data.fecha || data.dia || "";
-
-          const fechaRegistro = data.creadoEn?.toDate
-            ? data.creadoEn.toDate().toISOString()
-            : data.fechaRegistroAsistencia?.toDate
-            ? data.fechaRegistroAsistencia.toDate().toISOString()
-            : data.timestamp || "";
-
-          // Extraer hora del Timestamp fecha
-          const horaRegistro = data.fecha?.toDate
-            ? data.fecha.toDate().toLocaleTimeString("es-MX", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : data.horaRegistro || data.hora || "";
-
+      if (!res.ok) throw new Error("Error al obtener asistencias");
+      const asistencias = await res.json();
+      // Adaptar formato para la UI
+      const asistenciasData: Asistencia[] = asistencias
+        .map((a: any): Asistencia => {
           return {
-            id: idx + 1,
-            idInscripcion: idx + 1,
-            idDocente: Number(data.idDocente) || 0,
-            fecha: fecha,
-            horaRegistro: horaRegistro,
-            tipoAsistencia: (data.tipoAsistencia ||
-              data.tipo ||
-              "Falta") as TipoAsistencia,
-            fechaRegistroAsistencia: fechaRegistro,
-            fechaTimestamp: data.fecha?.toDate
-              ? data.fecha.toDate()
-              : new Date(fecha),
-          } as Asistencia & { fechaTimestamp: Date };
+            // Usar los nombres exactos de la base de datos/backend
+            id: a.idAsistencia ?? a.id ?? 0,
+            idInscripcion: a.idInscripcion ?? 0,
+            idDocente: a.idDocente ?? 0,
+            fecha: a.fecha ?? "",
+            horaRegistro: a.horaRegistro ?? "",
+            tipoAsistencia: a.tipoAsistencia ?? "Falta",
+            observaciones: a.observaciones ?? "",
+            fechaRegistroAsistencia:
+              a.fechaRegistro ?? a.fechaRegistroAsistencia ?? "",
+          };
         })
-        .sort((a, b) => {
-          // Ordenar manualmente por fecha descendente
-          return (
-            (b as any).fechaTimestamp.getTime() -
-            (a as any).fechaTimestamp.getTime()
-          );
-        })
-        .map((item, idx) => {
-          // Remover fechaTimestamp temporal y reasignar IDs
-          const { fechaTimestamp, ...asistencia } = item as any;
-          return { ...asistencia, id: idx + 1, idInscripcion: idx + 1 };
+        .sort((a: Asistencia, b: Asistencia) => {
+          // Ordenar por fecha descendente
+          return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
         });
-
       setAsistencias(asistenciasData);
     } catch (err) {
-      // ...
       setError("Error al cargar las asistencias");
       setAsistencias([]);
     } finally {
