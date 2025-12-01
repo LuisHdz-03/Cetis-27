@@ -59,6 +59,21 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "react-native-permissions",
+        {
+          "permissions": [
+            "BLUETOOTH",
+            "BLUETOOTH_ADMIN",
+            "BLUETOOTH_SCAN",
+            "BLUETOOTH_CONNECT",
+            "BLUETOOTH_ADVERTISE",
+            "ACCESS_FINE_LOCATION",
+            "ACCESS_COARSE_LOCATION"
+          ],
+          "iosPermissions": ["BLUETOOTH", "LOCATION_WHEN_IN_USE"]
+        }
       ]
     ],
     "experiments": {
