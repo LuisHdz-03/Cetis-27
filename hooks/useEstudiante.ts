@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/constants/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type {
   Especialidad,
@@ -35,7 +36,7 @@ export function useEstudiante() {
 
       // Obtener datos completos del estudiante desde el backend (con joins)
       const res = await fetch(
-        `http://192.168.1.87:3001/api/estudiantes/${resolvedEstudianteId}`
+        `${API_BASE_URL}/api/estudiantes/${resolvedEstudianteId}`
       );
       if (!res.ok) throw new Error("No se pudo obtener el estudiante");
       const data = await res.json();

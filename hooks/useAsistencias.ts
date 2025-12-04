@@ -1,6 +1,7 @@
 // hooks/useAsistencias.ts
 // Custom hook para manejar toda la lógica de asistencias y backend
 
+import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import type {
   Asistencia,
@@ -60,7 +61,7 @@ export const useAsistencias = () => {
 
       // 2. Obtener todos los grupos y materias necesarios en paralelo
       const grupoIds = inscripciones.map((i: any) => i.idGrupo);
-      const resGrupos = await fetch(`http://localhost:3001/api/grupos`);
+      const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
       const grupos = await resGrupos.json();
       const resMaterias = await fetch(`http://localhost:3001/api/materias`);
@@ -96,7 +97,7 @@ export const useAsistencias = () => {
     try {
       // 1. Obtener inscripciones del estudiante
       const resInscripciones = await fetch(
-        `http://localhost:3001/api/inscripciones?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`
       );
       if (!resInscripciones.ok)
         throw new Error("Error al obtener inscripciones");
@@ -108,18 +109,18 @@ export const useAsistencias = () => {
       }
       // 2. Obtener todos los grupos, materias y docentes necesarios
       const grupoIds = inscripciones.map((i: any) => i.idGrupo);
-      const resGrupos = await fetch(`http://localhost:3001/api/grupos`);
+      const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
       const grupos = await resGrupos.json();
-      const resMaterias = await fetch(`http://localhost:3001/api/materias`);
+      const resMaterias = await fetch(`${API_BASE_URL}/api/materias`);
       if (!resMaterias.ok) throw new Error("Error al obtener materias");
       const materias = await resMaterias.json();
-      const resDocentes = await fetch(`http://localhost:3001/api/usuarios`);
+      const resDocentes = await fetch(`${API_BASE_URL}/api/usuarios`);
       if (!resDocentes.ok) throw new Error("Error al obtener docentes");
       const docentes = await resDocentes.json();
       // 3. Obtener todas las asistencias del estudiante
       const resAsistencias = await fetch(
-        `http://localhost:3001/api/asistencias?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}`
       );
       if (!resAsistencias.ok) throw new Error("Error al obtener asistencias");
       const asistencias = await resAsistencias.json();
@@ -198,7 +199,7 @@ export const useAsistencias = () => {
     try {
       // Obtener asistencias filtradas por estudiante y grupo
       const res = await fetch(
-        `http://192.168.1.87:3001/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`
+        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`
       );
       if (!res.ok) throw new Error("Error al obtener asistencias");
       const asistencias = await res.json();

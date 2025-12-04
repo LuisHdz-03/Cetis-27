@@ -1,6 +1,7 @@
 // hooks/useReportes.ts
 // Custom hook para manejar toda la lógica de reportes e incidencias
 
+import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import type {
@@ -71,7 +72,7 @@ export const useReportes = () => {
 
       // Obtener reportes del backend (con joins y datos completos)
       const res = await fetch(
-        `http://192.168.1.87:3001/api/reportes?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/reportes?estudianteId=${estudianteId}`
       );
       if (!res.ok) throw new Error("No se pudieron obtener los reportes");
       const data = await res.json();
