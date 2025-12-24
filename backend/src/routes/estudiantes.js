@@ -30,17 +30,8 @@ router.get("/:id", async (req, res) => {
               },
             },
           },
-          where: {
-            grupo: {
-              activo: true,
-            },
-          },
           orderBy: {
-            grupo: {
-              periodo: {
-                fechaInicio: "desc",
-              },
-            },
+            fechaInscripcion: "desc",
           },
           take: 1,
         },
