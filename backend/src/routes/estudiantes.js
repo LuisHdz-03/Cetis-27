@@ -22,6 +22,28 @@ router.get("/:id", async (req, res) => {
       include: {
         usuario: true,
         especialidad: true,
+        inscripciones: {
+          include: {
+            grupo: {
+              include: {
+                periodo: true,
+              },
+            },
+          },
+          where: {
+            grupo: {
+              activo: true,
+            },
+          },
+          orderBy: {
+            grupo: {
+              periodo: {
+                fechaInicio: "desc",
+              },
+            },
+          },
+          take: 1,
+        },
       },
     });
     if (!estudiante) {
@@ -47,6 +69,10 @@ router.get("/:id", async (req, res) => {
     const telefono = estudiante.usuario
       ? estudiante.usuario.telefono || estudiante.telefono
       : estudiante.telefono;
+    const grupo =
+      estudiante.inscripciones && estudiante.inscripciones.length > 0
+        ? estudiante.inscripciones[0].grupo.codigo
+        : "Sin grupo";
     res.json({
       numeroControl: estudiante.numeroControl,
       nombreCompleto,
@@ -58,6 +84,7 @@ router.get("/:id", async (req, res) => {
       codigoQr: estudiante.codigoQr,
       fechaIngreso,
       curp: estudiante.curp,
+      grupo,
     });
   } catch (error) {
     res.status(500).json({ error: "Error al obtener estudiante" });
