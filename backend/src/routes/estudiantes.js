@@ -57,6 +57,7 @@ router.get("/:id", async (req, res) => {
       telefono,
       codigoQr: estudiante.codigoQr,
       fechaIngreso,
+      curp: estudiante.curp,
     });
   } catch (error) {
     res.status(500).json({ error: "Error al obtener estudiante" });
