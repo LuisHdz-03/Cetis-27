@@ -17,24 +17,33 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
+    console.log("[DEBUG] Buscando estudiante con id:", id);
+
+    // Consulta simplificada temporalmente para diagnosticar
     const estudiante = await prisma.estudiante.findUnique({
       where: { idEstudiante: id },
       include: {
         usuario: true,
         especialidad: true,
-        inscripciones: {
-          include: {},
-          orderBy: {
-            fechaInscripcion: "desc",
-          },
-          take: 1,
-        },
       },
     });
+
+    console.log("[DEBUG] Estudiante encontrado:", estudiante ? "Sí" : "No");
+
     if (!estudiante) {
       console.log("[DEBUG] No se encontró estudiante con id:", id);
       return res.status(404).json({ error: "Estudiante no encontrado" });
     }
+
+    console.log(
+      "[DEBUG] Usuario relacionado:",
+      estudiante.usuario ? "Sí" : "No"
+    );
+    console.log(
+      "[DEBUG] Especialidad relacionada:",
+      estudiante.especialidad ? "Sí" : "No"
+    );
+
     // Formatear respuesta para el frontend
     const nombreCompleto = estudiante.usuario
       ? `${estudiante.usuario.nombre} ${
@@ -55,7 +64,7 @@ router.get("/:id", async (req, res) => {
       ? estudiante.usuario.telefono || estudiante.telefono
       : estudiante.telefono;
 
-    res.json({
+    const response = {
       numeroControl: estudiante.numeroControl,
       nombreCompleto,
       especialidad: especialidadNombre,
@@ -66,8 +75,12 @@ router.get("/:id", async (req, res) => {
       codigoQr: estudiante.codigoQr,
       fechaIngreso,
       curp: estudiante.curp,
-    });
+    };
+
+    console.log("[DEBUG] Respuesta enviada:", response);
+    res.json(response);
   } catch (error) {
+    console.error("[DEBUG] Error en la consulta:", error);
     res.status(500).json({ error: "Error al obtener estudiante" });
   }
 });
