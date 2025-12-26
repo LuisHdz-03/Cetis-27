@@ -44,6 +44,31 @@ router.get("/:id", async (req, res) => {
       estudiante.especialidad ? "Sí" : "No"
     );
 
+    // Obtener el grupo activo correspondiente a la especialidad y semestre del estudiante
+    let grupo = "Sin grupo";
+    if (estudiante.especialidad) {
+      const grupoEncontrado = await prisma.grupo.findFirst({
+        where: {
+          idEspecialidad: estudiante.idEspecialidad,
+          semestre: estudiante.semestreActual,
+          activo: true,
+        },
+        select: { codigo: true },
+        orderBy: { fechaCreacion: "desc" }, // Tomar el más reciente si hay varios
+      });
+      if (grupoEncontrado) {
+        grupo = grupoEncontrado.codigo;
+        console.log("[DEBUG] Grupo encontrado:", grupo);
+      } else {
+        console.log(
+          "[DEBUG] No se encontró grupo para especialidad",
+          estudiante.idEspecialidad,
+          "y semestre",
+          estudiante.semestreActual
+        );
+      }
+    }
+
     // Formatear respuesta para el frontend
     const nombreCompleto = estudiante.usuario
       ? `${estudiante.usuario.nombre} ${
@@ -75,6 +100,7 @@ router.get("/:id", async (req, res) => {
       codigoQr: estudiante.codigoQr,
       fechaIngreso,
       curp: estudiante.curp,
+      grupo,
     };
 
     console.log("[DEBUG] Respuesta enviada:", response);
