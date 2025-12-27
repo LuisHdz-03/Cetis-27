@@ -46,8 +46,14 @@ router.get("/:id", async (req, res) => {
 
     // Obtener el grupo activo correspondiente a la especialidad y semestre del estudiante
     let grupo = "Sin grupo";
-    console.log("[DEBUG] idEspecialidad del estudiante:", estudiante.idEspecialidad);
-    console.log("[DEBUG] semestreActual del estudiante:", estudiante.semestreActual);
+    console.log(
+      "[DEBUG] idEspecialidad del estudiante:",
+      estudiante.idEspecialidad
+    );
+    console.log(
+      "[DEBUG] semestreActual del estudiante:",
+      estudiante.semestreActual
+    );
     if (estudiante.especialidad) {
       const grupoEncontrado = await prisma.grupo.findFirst({
         where: {
@@ -76,7 +82,10 @@ router.get("/:id", async (req, res) => {
           },
           select: { codigo: true, activo: true },
         });
-        console.log("[DEBUG] Grupos disponibles (sin filtro activo):", gruposDisponibles);
+        console.log(
+          "[DEBUG] Grupos disponibles (sin filtro activo):",
+          gruposDisponibles
+        );
       }
     } else {
       console.log("[DEBUG] Estudiante no tiene especialidad asignada");
