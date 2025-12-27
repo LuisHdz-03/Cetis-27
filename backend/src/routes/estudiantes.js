@@ -13,13 +13,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Obtener estudiante por ID con logs de debug
+// Obtener estudiante por ID
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    console.log("[DEBUG] Buscando estudiante con id:", id);
-
-    // Consulta simplificada temporalmente para diagnosticar
     const estudiante = await prisma.estudiante.findUnique({
       where: { idEstudiante: id },
       include: {
@@ -27,68 +24,8 @@ router.get("/:id", async (req, res) => {
         especialidad: true,
       },
     });
-
-    console.log("[DEBUG] Estudiante encontrado:", estudiante ? "Sí" : "No");
-
     if (!estudiante) {
-      console.log("[DEBUG] No se encontró estudiante con id:", id);
       return res.status(404).json({ error: "Estudiante no encontrado" });
-    }
-
-    console.log(
-      "[DEBUG] Usuario relacionado:",
-      estudiante.usuario ? "Sí" : "No"
-    );
-    console.log(
-      "[DEBUG] Especialidad relacionada:",
-      estudiante.especialidad ? "Sí" : "No"
-    );
-
-    // Obtener el grupo activo correspondiente a la especialidad y semestre del estudiante
-    let grupo = "Sin grupo";
-    console.log(
-      "[DEBUG] idEspecialidad del estudiante:",
-      estudiante.idEspecialidad
-    );
-    console.log(
-      "[DEBUG] semestreActual del estudiante:",
-      estudiante.semestreActual
-    );
-    if (estudiante.especialidad) {
-      const grupoEncontrado = await prisma.grupo.findFirst({
-        where: {
-          idEspecialidad: estudiante.idEspecialidad,
-          semestre: estudiante.semestreActual,
-          activo: true,
-        },
-        select: { codigo: true },
-        orderBy: { fechaCreacion: "desc" }, // Tomar el más reciente si hay varios
-      });
-      if (grupoEncontrado) {
-        grupo = grupoEncontrado.codigo;
-        console.log("[DEBUG] Grupo encontrado:", grupo);
-      } else {
-        console.log(
-          "[DEBUG] No se encontró grupo para especialidad",
-          estudiante.idEspecialidad,
-          "y semestre",
-          estudiante.semestreActual
-        );
-        // Intentar sin filtro de activo para debug
-        const gruposDisponibles = await prisma.grupo.findMany({
-          where: {
-            idEspecialidad: estudiante.idEspecialidad,
-            semestre: estudiante.semestreActual,
-          },
-          select: { codigo: true, activo: true },
-        });
-        console.log(
-          "[DEBUG] Grupos disponibles (sin filtro activo):",
-          gruposDisponibles
-        );
-      }
-    } else {
-      console.log("[DEBUG] Estudiante no tiene especialidad asignada");
     }
 
     // Formatear respuesta para el frontend
@@ -122,13 +59,10 @@ router.get("/:id", async (req, res) => {
       codigoQr: estudiante.codigoQr,
       fechaIngreso,
       curp: estudiante.curp,
-      grupo,
     };
 
-    console.log("[DEBUG] Respuesta enviada:", response);
     res.json(response);
   } catch (error) {
-    console.error("[DEBUG] Error en la consulta:", error);
     res.status(500).json({ error: "Error al obtener estudiante" });
   }
 });
