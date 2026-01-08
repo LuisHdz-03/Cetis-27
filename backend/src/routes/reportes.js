@@ -15,17 +15,23 @@ router.get("/", async (req, res) => {
       where: whereClause,
     });
 
+    console.log("Reportes desde BD:", JSON.stringify(reportes, null, 2));
+
     // Convertir el campo booleano 'estatus' a texto para el frontend
-    const reportesFormateados = reportes.map((reporte) => ({
-      ...reporte,
-      id: reporte.idReporte,
-      estatus:
-        reporte.estatus === true
-          ? "resuelto"
-          : reporte.estatus === false
-          ? "Pendiente"
-          : "Pendiente",
-    }));
+    const reportesFormateados = reportes.map((reporte) => {
+      const formateado = {
+        ...reporte,
+        id: reporte.idReporte,
+        estatus:
+          reporte.estatus === true
+            ? "resuelto"
+            : reporte.estatus === false
+            ? "Pendiente"
+            : "Pendiente",
+      };
+      console.log("Reporte formateado:", JSON.stringify(formateado, null, 2));
+      return formateado;
+    });
 
     res.json(reportesFormateados);
   } catch (error) {
