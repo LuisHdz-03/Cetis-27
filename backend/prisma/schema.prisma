@@ -90,7 +90,7 @@ model materia {
   horas	            Int
   activo	          Boolean
   fechaCreacion	    DateTime
-  fechaEdicion      DateTime
+  fechaEdicion      DateTime?
 
   @@map("materias")
 }
@@ -132,7 +132,7 @@ model especialidad {
   codigo	          String
   activo	          Boolean
   fechaCreacion	    DateTime
-  fechaEdicion      DateTime
+  fechaEdicion      DateTime?
 
   estudiantes Estudiante[]
   @@map("especialidades")
