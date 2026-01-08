@@ -22,6 +22,8 @@ model Estudiante {
   fechaIngreso    DateTime?
   fechaCreacion   DateTime
   fechaEdicion    DateTime
+  foto            String?
+  codigoQr        String?
 
   usuario         Usuario  @relation(fields: [idUsuario], references: [idUsuario])
   especialidad    especialidad @relation(fields: [idEspecialidad], references: [idEspecialidad])
@@ -95,6 +97,18 @@ model materia {
   @@map("materias")
 }
 
+model periodo {
+  idPeriodo         Int @id @default(autoincrement())
+  nombre            String
+  fechaInicio       DateTime
+  fechaFin          DateTime
+  activo            Boolean
+  fechaCreacion     DateTime
+  fechaEdicion      DateTime?
+
+  @@map("periodos")
+}
+
 model asistencia {
   idAsistencia	      Int @id @default(autoincrement())
   idInscripcion	      Int
@@ -119,9 +133,16 @@ model reporte {
   fechaReporte	    DateTime
   gravedad	        String
   estatus	          Boolean
-  accionTomada	    String
+  accionTomada	    String?
   fechaCreacion	    DateTime
-  fechaRevision     DateTime
+  fechaRevision     DateTime?
+  lugarEncontraba   String?
+  leClasesReportado String?
+  nombreFirmaAlumno String?
+  nombreFirmaMaestro String?
+  nombreTutor       String?
+  nombrePapaMamaTutor String?
+  telefono          String?
 
   @@map("reportes")
 }
