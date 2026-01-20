@@ -49,7 +49,7 @@ router.get("/:id", async (req, res) => {
       : estudiante.telefono;
 
     const response = {
-      numeroControl: estudiante.numeroControl,
+      numeroControl: String(estudiante.numeroControl),
       nombreCompleto,
       especialidad: especialidadNombre,
       codigoEspecialidad,
