@@ -22,7 +22,7 @@ model Estudiante {
   fechaIngreso    DateTime?
   fechaCreacion   DateTime?
   fechaEdicion    DateTime?
-  foto            String?
+  foto            String?  @db.LongText
   codigoQr        String?
 
   usuario         Usuario  @relation(fields: [idUsuario], references: [idUsuario])

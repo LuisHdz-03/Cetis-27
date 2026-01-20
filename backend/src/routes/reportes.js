@@ -26,8 +26,8 @@ router.get("/", async (req, res) => {
           reporte.estatus === true
             ? "resuelto"
             : reporte.estatus === false
-            ? "Pendiente"
-            : "Pendiente",
+              ? "Pendiente"
+              : "Pendiente",
       };
       console.log("Reporte formateado:", JSON.stringify(formateado, null, 2));
       return formateado;
@@ -39,4 +39,56 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Error al obtener los reportes" });
   }
 });
+
+router.post("/", async (req, res) => {
+  try {
+    const {
+      idEstudiante,
+      idGrupo,
+      idDocente,
+      tipo,
+      titulo,
+      descripcion,
+      fechaReporte,
+      gravedad,
+      estatus,
+      accionTomada,
+      lugarEncontraba,
+      leClasesReportado,
+      nombreFirmaAlumno,
+      nombreFirmaMaestro,
+      nombreTutor,
+      nombrePapaMamaTutor,
+      telefono,
+    } = req.body;
+
+    const nuevoReporte = await prisma.reporte.create({
+      data: {
+        idEstudiante,
+        idGrupo,
+        idDocente,
+        tipo,
+        titulo,
+        descripcion,
+        fechaReporte: new Date(fechaReporte),
+        gravedad,
+        estatus,
+        accionTomada,
+        fechaCreacion: new Date(),
+        lugarEncontraba,
+        leClasesReportado,
+        nombreFirmaAlumno,
+        nombreFirmaMaestro,
+        nombreTutor,
+        nombrePapaMamaTutor,
+        telefono,
+      },
+    });
+    res.json(nuevoReporte);
+  } catch (error) {
+    console.error("Error creando reporte:", error);
+    res.status(500).json({ error: "Error al crear el reporte" });
+  }
+});
+
 module.exports = router;

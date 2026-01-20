@@ -11,4 +11,24 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Error al obtener las inscripciones" });
   }
 });
+
+router.post("/", async (req, res) => {
+  try {
+    const { idEstudiante, idGrupo, fechaInscripcion, activo } = req.body;
+    const nuevaInscripcion = await prisma.inscripcion.create({
+      data: {
+        idEstudiante,
+        idGrupo,
+        fechaInscripcion: new Date(fechaInscripcion),
+        activo,
+        fechaCreacion: new Date(),
+      },
+    });
+    res.json(nuevaInscripcion);
+  } catch (error) {
+    console.error("Error creando inscripción:", error);
+    res.status(500).json({ error: "Error al crear la inscripción" });
+  }
+});
+
 module.exports = router;
