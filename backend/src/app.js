@@ -38,4 +38,8 @@ app.use("/api/reportes", reportesRoutes);
 
 const especialidadesRouter = require("./routes/especialidades");
 app.use("/api/especialidades", especialidadesRouter);
+
+const periodosRoutes = require("./routes/periodos");
+app.use("/api/periodos", periodosRoutes);
+
 module.exports = app;
