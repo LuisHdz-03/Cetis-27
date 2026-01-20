@@ -13,7 +13,7 @@ model Estudiante {
   idEstudiante    Int      @id @default(autoincrement())
   idUsuario       Int
   idEspecialidad  Int
-  numeroControl   Int @unique
+  numeroControl   BigInt   @unique
   curp            String
   fechaNacimiento DateTime
   direccion       String?
