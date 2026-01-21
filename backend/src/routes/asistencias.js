@@ -18,9 +18,24 @@ router.get("/", async (req, res) => {
       }
 
       // Obtener inscripciones del estudiante (y opcionalmente del grupo)
-      const inscripciones = await prisma.inscripcion.findMany({
+      let inscripciones = await prisma.inscripcion.findMany({
         where: whereInscripcion,
+        orderBy: {
+          fechaCreacion: "desc", // Más reciente primero
+        },
       });
+
+      // Si hay múltiples inscripciones al mismo grupo, quedarse solo con la más reciente
+      if (grupoId) {
+        const gruposVistos = new Set();
+        inscripciones = inscripciones.filter((insc) => {
+          if (gruposVistos.has(insc.idGrupo)) {
+            return false; // Ya vimos este grupo, omitir
+          }
+          gruposVistos.add(insc.idGrupo);
+          return true; // Primera vez que vemos este grupo, mantener
+        });
+      }
 
       const inscripcionIds = inscripciones.map((i) => i.idInscripcion);
 
