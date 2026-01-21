@@ -15,12 +15,17 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { idEstudiante, idGrupo, fechaInscripcion, activo } = req.body;
+
+    const fechaFinal = fechaInscripcion
+      ? new Date(fechaInscripcion)
+      : new Date();
+
     const nuevaInscripcion = await prisma.inscripcion.create({
       data: {
         idEstudiante,
         idGrupo,
-        fechaInscripcion: new Date(fechaInscripcion),
-        activo,
+        fechaInscripcion: fechaFinal,
+        activo: activo !== undefined ? activo : true,
         fechaCreacion: new Date(),
       },
     });

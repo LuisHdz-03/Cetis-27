@@ -5,9 +5,58 @@ const prisma = new PrismaClient();
 
 router.get("/", async (req, res) => {
   try {
-    const asistencias = await prisma.asistencia.findMany();
-    res.json(asistencias);
+    const { estudianteId } = req.query;
+
+    let asistencias;
+    if (estudianteId) {
+      // Obtener inscripciones del estudiante
+      const inscripciones = await prisma.inscripcion.findMany({
+        where: { idEstudiante: parseInt(estudianteId) },
+      });
+
+      const inscripcionIds = inscripciones.map((i) => i.idInscripcion);
+
+      // Obtener asistencias de esas inscripciones
+      asistencias = await prisma.asistencia.findMany({
+        where: {
+          idInscripcion: { in: inscripcionIds },
+        },
+      });
+
+      // Obtener datos relacionados manualmente
+      const grupoIds = inscripciones.map((i) => i.idGrupo);
+      const grupos = await prisma.grupo.findMany({
+        where: { idGrupo: { in: grupoIds } },
+      });
+
+      const materiaIds = grupos.map((g) => g.idMateria);
+      const materias = await prisma.materia.findMany({
+        where: { idMateria: { in: materiaIds } },
+      });
+
+      // Armar respuesta con datos completos
+      const asistenciasConDatos = asistencias.map((asist) => {
+        const inscripcion = inscripciones.find(
+          (i) => i.idInscripcion === asist.idInscripcion,
+        );
+        const grupo = grupos.find((g) => g.idGrupo === inscripcion?.idGrupo);
+        const materia = materias.find((m) => m.idMateria === grupo?.idMateria);
+
+        return {
+          ...asist,
+          nombreMateria: materia?.nombre || "Sin materia",
+          codigoGrupo: grupo?.codigo || "Sin grupo",
+          grupoIdString: grupo?.idGrupo.toString() || "",
+        };
+      });
+
+      res.json(asistenciasConDatos);
+    } else {
+      asistencias = await prisma.asistencia.findMany();
+      res.json(asistencias);
+    }
   } catch (error) {
+    console.error("Error al obtener las asistencias:", error);
     res.status(500).json({ error: "Error al obtener las asistencias" });
   }
 });
