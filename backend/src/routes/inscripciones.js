@@ -5,9 +5,20 @@ const prisma = new PrismaClient();
 
 router.get("/", async (req, res) => {
   try {
-    const inscripciones = await prisma.inscripcion.findMany();
+    const { estudianteId } = req.query;
+
+    let inscripciones;
+    if (estudianteId) {
+      inscripciones = await prisma.inscripcion.findMany({
+        where: { idEstudiante: parseInt(estudianteId) },
+      });
+    } else {
+      inscripciones = await prisma.inscripcion.findMany();
+    }
+
     res.json(inscripciones);
   } catch (error) {
+    console.error("Error al obtener inscripciones:", error);
     res.status(500).json({ error: "Error al obtener las inscripciones" });
   }
 });
