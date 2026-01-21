@@ -5,13 +5,21 @@ const prisma = new PrismaClient();
 
 router.get("/", async (req, res) => {
   try {
-    const { estudianteId } = req.query;
+    const { estudianteId, grupoId } = req.query;
 
     let asistencias;
     if (estudianteId) {
-      // Obtener inscripciones del estudiante
+      // Construir filtro de inscripciones
+      const whereInscripcion = { idEstudiante: parseInt(estudianteId) };
+
+      // Si se especifica grupoId, filtrar también por grupo
+      if (grupoId) {
+        whereInscripcion.idGrupo = parseInt(grupoId);
+      }
+
+      // Obtener inscripciones del estudiante (y opcionalmente del grupo)
       const inscripciones = await prisma.inscripcion.findMany({
-        where: { idEstudiante: parseInt(estudianteId) },
+        where: whereInscripcion,
       });
 
       const inscripcionIds = inscripciones.map((i) => i.idInscripcion);
