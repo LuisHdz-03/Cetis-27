@@ -28,7 +28,6 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-// GET: Obtener todos
 router.get("/", async (req, res) => {
   try {
     const usuarios = await prisma.usuario.findMany();
@@ -67,7 +66,7 @@ router.post("/", async (req, res) => {
         apellidoPaterno,
         apellidoMaterno,
         email,
-        password: hashedPassword, // <--- GUARDAMOS LA ENCRIPTADA
+        password: hashedPassword,
         tipoUsuario,
         activo: activo !== undefined ? activo : true,
         telefono,
@@ -93,7 +92,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-//subir foto
 router.post("/uploadFoto", upload.single("foto"), async (req, res) => {
   try {
     const { idUsuario } = req.body;
@@ -102,28 +100,47 @@ router.post("/uploadFoto", upload.single("foto"), async (req, res) => {
     if (!idUsuario)
       return res.status(400).json({ error: "falta el idUsuario" });
 
-    const urlFoto = req.file.path;
+    const urlFotoNueva = req.file.path;
     console.log("foto para el chaval: ", idUsuario);
 
-    const estudianteEcnotrado = await prisma.estudiante.findFirst({
+    const estudianteEncontrado = await prisma.estudiante.findFirst({
       where: { idUsuario: parseInt(idUsuario, 10) },
     });
 
-    if (!estudianteEcnotrado)
+    if (!estudianteEncontrado)
       return res.status(400).json({ error: "no se encontro al estudiante" });
 
+    const fotoVieja = estudianteEncontrado.foto;
+
+    if (fotoVieja) {
+      try {
+        const nombreArchivo = fotoVieja.split("/").pop().split(".")[0];
+        const publicId = `fotos_chavales_cetis27/${nombreArchivo}`;
+
+        console.log(
+          "Intentando eliminar la foto vieja de Cloudinary: ",
+          publicId,
+        );
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.error("Error al borrar la foto vieja:", error);
+      }
+    }
+
     const estudianteActualizado = await prisma.estudiante.update({
-      where: { idEstudiante: estudianteEcnotrado.idEstudiante },
-      data: { foto: urlFoto },
+      where: { idEstudiante: estudianteEncontrado.idEstudiante },
+      data: { foto: urlFotoNueva },
     });
+
     const respuestaSegura = JSON.parse(
       JSON.stringify(estudianteActualizado, (key, value) =>
         typeof value === "bigint" ? value.toString() : value,
       ),
     );
+
     res.json({
       mensaje: "foto actualizada",
-      foto: urlFoto,
+      foto: urlFotoNueva,
       estudiante: respuestaSegura,
     });
   } catch (error) {
