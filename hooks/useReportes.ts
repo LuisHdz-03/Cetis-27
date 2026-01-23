@@ -12,9 +12,8 @@ import type {
   TipoReporte,
 } from "@/types/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-// Re-exportar tipos para compatibilidad
 export type {
   EstatusReporte,
   GravedadReporte,
@@ -47,14 +46,12 @@ export const useReportes = () => {
   const [reportes, setReportes] = useState<ReporteDetallado[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasFetchedRef = useRef(false);
   const { user } = useAuth();
 
   /**
    * Obtiene los reportes del estudiante
    */
   const fetchReportes = async () => {
-    if (hasFetchedRef.current) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -66,23 +63,22 @@ export const useReportes = () => {
       }
       if (!estudianteId) {
         throw new Error(
-          "No se encontró estudianteId. Asegura relación usuario-estudiante."
+          "No se encontró estudianteId. Asegura relación usuario-estudiante.",
         );
       }
 
       // Obtener reportes del backend (con joins y datos completos)
       const res = await fetch(
-        `${API_BASE_URL}/api/reportes?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/reportes?estudianteId=${estudianteId}`,
       );
       if (!res.ok) throw new Error("No se pudieron obtener los reportes");
       const data = await res.json();
       setReportes(data as ReporteDetallado[]);
-      hasFetchedRef.current = true;
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Error desconocido al cargar reportes"
+          : "Error desconocido al cargar reportes",
       );
       setReportes([]);
     } finally {
@@ -94,7 +90,7 @@ export const useReportes = () => {
    * Obtiene la configuración de colores según la severidad
    */
   const getSeverityConfig = (
-    severity: "ALTA" | "MEDIA" | "BAJA"
+    severity: "ALTA" | "MEDIA" | "BAJA",
   ): SeverityConfig => {
     switch (severity) {
       case "ALTA":
@@ -129,6 +125,15 @@ export const useReportes = () => {
    * Nota: BD usa capitalización mixta ("Pendiente", "revisado", "resuelto")
    */
   const getStatusConfig = (estatus: EstatusReporte): StatusConfig => {
+    // Validar que estatus existe antes de usar toUpperCase
+    if (!estatus) {
+      return {
+        bgColor: colors.gray[50],
+        textColor: colors.gray[700],
+        icon: "time" as const,
+      };
+    }
+
     // Normalizar a uppercase para comparación
     const statusUpper = estatus.toUpperCase();
 

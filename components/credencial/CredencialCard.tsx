@@ -1,8 +1,19 @@
 import { colors } from "@/constants/colors";
 import { styles } from "@/constants/credencialStyles";
 import { useEstudiante } from "@/hooks/useEstudiante";
+import { usePeriodo } from "@/hooks/usePeriodo";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View, ViewStyle } from "react-native";
+import { useState } from "react";
+
+import {
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 
@@ -15,6 +26,8 @@ interface EstudianteData {
   telefono: string;
   fechaIngreso: string;
   codigoQr: string;
+  curp: string;
+  foto: string | null;
 }
 
 interface CredencialCardProps {
@@ -22,6 +35,7 @@ interface CredencialCardProps {
   onFlip: () => void;
   frontAnimatedStyle: AnimatedStyle<ViewStyle>;
   backAnimatedStyle: AnimatedStyle<ViewStyle>;
+  showBack: boolean;
 }
 
 export function CredencialCard({
@@ -29,8 +43,11 @@ export function CredencialCard({
   onFlip,
   frontAnimatedStyle,
   backAnimatedStyle,
+  showBack,
 }: CredencialCardProps) {
   const { qrData } = useEstudiante();
+  const { periodo } = usePeriodo();
+  const [qrModalVisible, setQrModalVisible] = useState(false);
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -41,106 +58,170 @@ export function CredencialCard({
       <Animated.View
         style={[styles.card, styles.cardFront, frontAnimatedStyle]}
       >
-        {/* Header */}
-        <View style={styles.headerFront}>
-          <Text style={styles.institucionFront}>CETIS 27</Text>
-        </View>
-
-        {/* Contenido principal */}
-        <View style={styles.mainContentFront}>
-          {/* Icono de persona (lado izquierdo) */}
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person" size={80} color={colors.primary} />
+        {/* Contenedor principal que ocupa el espacio disponible */}
+        <View style={styles.contentContainer}>
+          {/* FotosSEP */}
+          <View style={styles.headerFotos}>
+            <Image
+              source={require("@/assets/images/SEP.png")}
+              style={styles.imageSep}
+            />
+            <Image
+              source={require("@/assets/images/DGETI.png")}
+              style={styles.imageSep}
+            />
           </View>
 
-          {/* Información (lado derecho) */}
-          <View style={styles.infoContainerFront}>
-            <Text style={styles.nombreFront} numberOfLines={2}>
-              {estudiante.nombreCompleto}
-            </Text>
+          {/* Contenido principal */}
+          <View style={styles.mainContentFront}>
+            <View style={styles.fotoNoControl}>
+              <View style={[styles.avatarContainer, { overflow: "hidden" }]}>
+                {estudiante.foto ? (
+                  <Image
+                    source={{ uri: estudiante.foto }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name="person" size={80} color={colors.primary} />
+                )}
+              </View>
 
-            <Text style={styles.detalleTexto} numberOfLines={1}>
-              {estudiante.especialidad}
-            </Text>
+              <Text style={styles.labelNControl}>NO. DE CONTROL</Text>
+              <Text style={styles.numeroControl}>
+                {estudiante.numeroControl}
+              </Text>
+            </View>
 
-            <Text style={styles.detalleTexto}>
-              Semestre {estudiante.semestre}
-            </Text>
+            {/* Información (lado derecho) */}
+            <View style={styles.infoContainerFront}>
+              <Text style={styles.cetisTitulo} numberOfLines={2}>
+                CENTRO DE ESTUDIOS TECNOLÓGICOS INDUSTRIAL Y DE SERVICIOS No. 27
+              </Text>
+              <Text style={styles.labelAlumno}>ALUMNO(A)</Text>
+              <Text style={styles.nombreFront} numberOfLines={2}>
+                {estudiante.nombreCompleto}
+              </Text>
+              <Text style={styles.curp}>CURP</Text>
+              <Text style={styles.curpValue}>{estudiante.curp}</Text>
+            </View>
+          </View>
+        </View>
 
-            <Text style={styles.detalleTexto}>{estudiante.numeroControl}</Text>
+        <View style={styles.barraEspe}>
+          <View style={styles.textoR}>
+            <Text style={styles.textoCheuco}>
+              ESPECIALIDAD {estudiante.especialidad}
+            </Text>
           </View>
         </View>
       </Animated.View>
 
       {/* PARTE TRASERA */}
       <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
-        <View style={styles.infoContainerBack}>
-          <View style={styles.infoRowBack}>
-            <Text style={styles.labelBack}>Correo Electrónico</Text>
-            <Text style={styles.valueBack} numberOfLines={1}>
-              {estudiante.email}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              marginBottom: 10,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <View style={styles.infoRowBack}>
-                <Text style={styles.labelBack}>Teléfono</Text>
-                <Text style={styles.valueBack}>{estudiante.telefono}</Text>
-              </View>
-              <View style={styles.infoRowBack}>
-                <Text style={styles.labelBack}>Fecha de Ingreso</Text>
-                <Text style={styles.valueBack}>
-                  {estudiante.fechaIngreso && estudiante.fechaIngreso !== "N/A"
-                    ? (() => {
-                        const fechaRaw = estudiante.fechaIngreso;
-                        const fechaISO = fechaRaw.includes("T")
-                          ? fechaRaw
-                          : fechaRaw.replace(" ", "T");
-                        const fecha = new Date(fechaISO);
-                        return isNaN(fecha.getTime())
-                          ? "Sin fecha"
-                          : fecha.toLocaleDateString("es-MX", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            });
-                      })()
-                    : "Sin fecha"}
-                </Text>
-              </View>
+        <View style={styles.barraTurno}>
+          <View style={styles.turnosYfechas}>
+            {/*contenedor de los turnos y fechas*/}
+            <View style={styles.soloTurnos}>
+              <Text style={[styles.textoTurno, styles.margenesTexto1]}>
+                SISTEMA ESCOLARIZADO
+              </Text>
+              <Text style={[styles.textoTurno, styles.margenesTexto2]}>
+                TURNO MATUTINO
+              </Text>
             </View>
-            <View
-              style={{
-                alignItems: "flex-start",
-                justifyContent: "flex-start",
-                marginLeft: 12,
-                marginTop: -16,
-              }}
-            >
-              {qrData ? (
+
+            {/*contenedor de las fechas*/}
+            {periodo && (
+              <View style={styles.soloFechas}>
+                <Text style={styles.textFechas}>FECHA DE EMISIÓN:</Text>
+                <Text style={styles.fechas}>{periodo.fechaEmision}</Text>
+                <Text style={styles.textFechas}>VIGENCIA:</Text>
+                <Text style={styles.fechas}>{periodo.vigencia}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <View style={styles.stQrFt}>
+          <TouchableOpacity
+            style={styles.qr}
+            onPress={(e) => {
+              if (showBack) {
+                e.stopPropagation();
+                setQrModalVisible(true);
+              }
+            }}
+            activeOpacity={showBack ? 0.7 : 1}
+            disabled={!showBack}
+          >
+            {qrData ? (
+              <QRCode
+                value={qrData}
+                size={70}
+                color={colors.primary}
+                backgroundColor={colors.white}
+              />
+            ) : (
+              <Text style={styles.textoQR}>Sin QR</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divisor} />
+
+          <View>
+            <Image
+              source={require("@/assets/images/DGETI.png")}
+              style={styles.imgDEGTI}
+            />
+          </View>
+        </View>
+        <View style={styles.cajaBox}>
+          <Text style={styles.textoDirePlante}>DIRECTOR DEL PLANTEL</Text>
+          <Text style={styles.textosCesarCastro}>CESAR CASTRO GARCIA</Text>
+        </View>
+        <View style={styles.nuevoDivisor} />
+        <View style={styles.stDirecciones}>
+          <Text style={styles.labelDireccion}>DIRECCION DEL PLANTEL</Text>
+          <Text style={styles.labelDosDirecc}>
+            CARRETERA CARAPAN-URUAPAN KM 66.8 URUAPAN, MICHOACAN, CP.60000, TEL.
+            5231509
+          </Text>
+        </View>
+      </Animated.View>
+
+      {/* Modal para QR ampliado */}
+      <Modal
+        visible={qrModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setQrModalVisible(false)}
+      >
+        <Pressable
+          style={styles.qrModalOverlay}
+          onPress={() => setQrModalVisible(false)}
+        >
+          <View style={styles.qrModalContent}>
+            {qrData ? (
+              <View style={styles.qrModalQrContainer}>
                 <QRCode
                   value={qrData}
-                  size={100}
+                  size={250}
                   color={colors.primary}
                   backgroundColor={colors.white}
                 />
-              ) : (
-                <Text style={{ color: colors.white, fontSize: 12 }}>
-                  Sin QR
-                </Text>
-              )}
-            </View>
+              </View>
+            ) : (
+              <Text style={styles.textoQR}>Sin QR</Text>
+            )}
+            <TouchableOpacity
+              style={styles.qrModalCloseButton}
+              onPress={() => setQrModalVisible(false)}
+            >
+              <Text style={styles.qrModalCloseText}>Cerrar</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.dividerBack} />
-        </View>
-      </Animated.View>
+        </Pressable>
+      </Modal>
     </TouchableOpacity>
   );
 }

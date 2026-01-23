@@ -1,24 +1,107 @@
-import { BluetoothHeader } from "@/components/BluetoothHeader";
+import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { homeStyles as styles } from "@/constants/homeStyles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEstudiante } from "@/hooks/useEstudiante";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PerfilScreen() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { estudiante, isLoading, error, refreshData } = useEstudiante();
+  const [uploading, setUploading] = useState(false);
 
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permiso denegado",
+        "Se necesitan permisos para acceder a las fotos.",
+      );
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const nuevaUri = result.assets[0].uri;
+      if (estudiante?.foto) {
+        Alert.alert("Actualizar Foto?", "Se eliminara la foto actual.", [
+          { text: "Calcelar", style: "cancel" },
+          {
+            text: "Actualizar",
+            style: "default",
+            onPress: () => uploadImage(nuevaUri),
+          },
+        ]);
+      } else {
+        uploadImage(result.assets[0].uri);
+      }
+    }
+  };
+  const uploadImage = async (uri: string) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+
+      const filename = uri.split("/").pop() || "perfil.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append("foto", { uri, name: filename, type } as any);
+
+      const idPaEnviar =
+        estudiante?.idUsuario || (user as any)?.idUsuario || (user as any)?.id;
+
+      if (!idPaEnviar) {
+        Alert.alert("Error", "No se encontró el ID del usuario");
+        setUploading(false);
+        return;
+      }
+
+      formData.append("idUsuario", String(idPaEnviar));
+
+      const response = await fetch(`${API_BASE_URL}/api/usuarios/uploadFoto`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-type": "multipart/form-data",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log("Error del Servidor (HTML):", errorText);
+        Alert.alert("Error del Servidor");
+        throw new Error("El servidor respondió con error: " + response.status);
+      }
+
+      const data = await response.json();
+
+      Alert.alert("Foto actualizada correctamente.");
+      await refreshData();
+    } catch (error) {
+      Alert.alert("Error", "Fallo al subir la imagen.");
+    } finally {
+      setUploading(false);
+    }
+  };
   const handleLogout = async () => {
     Alert.alert("Cerrar sesión", "¿Estás seguro que deseas cerrar sesión?", [
       {
@@ -37,9 +120,7 @@ export default function PerfilScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <BluetoothHeader />
-
+    <View style={styles.safeArea}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -68,9 +149,33 @@ export default function PerfilScreen() {
           <>
             {/* Avatar y nombre destacado */}
             <View style={styles.profileHeader}>
-              <View style={styles.avatarContainer}>
-                <Ionicons name="person" size={60} color={colors.primary} />
-              </View>
+              <TouchableOpacity onPress={pickImage} disabled={uploading}>
+                <View
+                  style={[
+                    styles.avatarContainer,
+                    { overflow: "hidden", position: "relative" },
+                  ]}
+                >
+                  {uploading ? (
+                    <ActivityIndicator size={"large"} color={colors.primary} />
+                  ) : estudiante.foto ? (
+                    <Image
+                      source={{ uri: estudiante.foto }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.avatarContainer}>
+                      <Ionicons
+                        name="person"
+                        size={60}
+                        color={colors.primary}
+                      />
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+
               <Text style={styles.studentName}>
                 {estudiante.nombreCompleto}
               </Text>
@@ -179,6 +284,6 @@ export default function PerfilScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

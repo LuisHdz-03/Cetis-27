@@ -32,15 +32,13 @@ export default function AsistenciasModal({
   error,
   getMonthYearString,
 }: AsistenciasModalProps) {
-  // Función para obtener datos de la tabla
   const getTableData = () => {
-    if (asistenciasDetalladas.length === 0) {
+    if (!asistenciasDetalladas || asistenciasDetalladas.length === 0) {
       return { fechasUnicas: [], tabla: {} };
     }
 
-    // Obtener fechas únicas ordenadas
     const fechasUnicas = Array.from(
-      new Set(asistenciasDetalladas.map((a) => a.fecha))
+      new Set(asistenciasDetalladas.map((a) => a.fecha)),
     ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     // Crear objeto con los datos organizados por fecha
@@ -50,34 +48,57 @@ export default function AsistenciasModal({
         asistencia: number;
         retardo: number;
         falta: number;
-        hora?: string; // Hora del primer registro de ese día
+        hora?: string;
+        fechaOriginal: string;
       }
     > = {};
 
-    fechasUnicas.forEach((fecha) => {
-      tabla[fecha] = { asistencia: 0, retardo: 0, falta: 0 };
-    });
-
     asistenciasDetalladas.forEach((item) => {
-      if (tabla[item.fecha]) {
-        const tipo = item.tipoAsistencia.toLowerCase() as
-          | "asistencia"
-          | "retardo"
-          | "falta";
-        if (
-          tabla[item.fecha] &&
-          (tipo === "asistencia" || tipo === "retardo" || tipo === "falta")
-        ) {
-          tabla[item.fecha][tipo]++;
-        }
-        // Guardar la hora del primer registro encontrado para esa fecha
-        if (!tabla[item.fecha].hora && item.horaRegistro) {
-          tabla[item.fecha].hora = item.horaRegistro;
+      const fechaKey = item.fecha.split("T")[0];
+
+      if (!tabla[fechaKey]) {
+        tabla[fechaKey] = {
+          asistencia: 0,
+          retardo: 0,
+          falta: 0,
+          fechaOriginal: item.fecha,
+        };
+      }
+
+      const tipo = (item.tipoAsistencia || "").toLowerCase();
+      if (tipo.includes("asistencia")) tabla[fechaKey].asistencia++;
+      else if (tipo.includes("retardo")) tabla[fechaKey].retardo++;
+      else if (tipo.includes("falta")) tabla[fechaKey].falta++;
+
+      // 3. CAPTURA DE HORA
+      // Si tenemos hora de registro, la formateamos bonita (HH:MM)
+      if (!tabla[fechaKey].hora && item.horaRegistro) {
+        const horaRaw = item.horaRegistro;
+        try {
+          // Intentamos sacar solo la hora
+          const dateObj = new Date(horaRaw);
+          // Formato corto: 08:15
+          const horaFormateada = dateObj.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          // Si sale "Invalid Date" (pasa a veces en Android), hacemos fallback manual
+          tabla[fechaKey].hora =
+            horaFormateada !== "Invalid Date"
+              ? horaFormateada
+              : horaRaw.substring(11, 16);
+        } catch (e) {
+          tabla[fechaKey].hora = "";
         }
       }
     });
 
-    return { fechasUnicas, tabla };
+    // Ordenamos las fechas (Keys) de la más reciente a la más antigua
+    const fechasOrdenadas = Object.keys(tabla).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime(),
+    );
+    return { fechasUnicas: fechasOrdenadas, tabla };
   };
 
   const { fechasUnicas, tabla } = getTableData();
@@ -107,7 +128,7 @@ export default function AsistenciasModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {estadisticasMaterias.find(
-                (m) => m.grupoIdString === selectedMateria
+                (m) => m.grupoIdString === selectedMateria,
               )?.nombreMateria || "Materia"}{" "}
               - {getMonthYearString()}
             </Text>

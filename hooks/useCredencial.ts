@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   interpolate,
   useAnimatedStyle,
@@ -13,13 +13,25 @@ import {
 export function useCredencial() {
   const [showBack, setShowBack] = useState(false);
   const rotation = useSharedValue(0);
+  const isAnimating = useRef(false);
 
   /**
    * Maneja el volteo de la tarjeta con animación
    */
   const handleFlip = () => {
-    rotation.value = withTiming(rotation.value + 180, { duration: 600 });
-    setTimeout(() => setShowBack(!showBack), 300);
+    // Evitar múltiples clics durante la animación
+    if (isAnimating.current) return;
+
+    isAnimating.current = true;
+    const newShowBack = !showBack;
+
+    // Alternar entre 0 y 180 grados en lugar de acumular
+    rotation.value = withTiming(newShowBack ? 180 : 0, { duration: 600 });
+
+    setTimeout(() => {
+      setShowBack(newShowBack);
+      isAnimating.current = false;
+    }, 300);
   };
 
   /**

@@ -49,7 +49,7 @@ export const useAsistencias = () => {
     try {
       // 1. Obtener inscripciones del estudiante
       const resInscripciones = await fetch(
-        `http://localhost:3001/api/inscripciones?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
       );
       if (!resInscripciones.ok)
         throw new Error("Error al obtener inscripciones");
@@ -64,15 +64,19 @@ export const useAsistencias = () => {
       const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
       const grupos = await resGrupos.json();
-      const resMaterias = await fetch(`http://localhost:3001/api/materias`);
+      const resMaterias = await fetch(`${API_BASE_URL}/api/materias`);
       if (!resMaterias.ok) throw new Error("Error al obtener materias");
       const materias = await resMaterias.json();
 
       const opciones: MateriaPickerOption[] = [];
       for (const inscripcion of inscripciones) {
-        const grupo = grupos.find((g: any) => g.id === inscripcion.idGrupo);
+        const grupo = grupos.find(
+          (g: any) => g.idGrupo === inscripcion.idGrupo,
+        );
         if (!grupo) continue;
-        const materia = materias.find((m: any) => m.id === grupo.idMateria);
+        const materia = materias.find(
+          (m: any) => m.idMateria === grupo.idMateria,
+        );
         if (!materia) continue;
         const grupoCodigo =
           grupo.codigo || grupo.code || grupo.clave || "Sin código";
@@ -80,7 +84,7 @@ export const useAsistencias = () => {
           label: `${
             materia.nombre || materia.name || "Materia"
           } - Grupo ${grupoCodigo}`,
-          value: String(grupo.id),
+          value: String(grupo.idGrupo),
         });
       }
       setGruposParaPicker(opciones);
@@ -97,71 +101,106 @@ export const useAsistencias = () => {
     try {
       // 1. Obtener inscripciones del estudiante
       const resInscripciones = await fetch(
-        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
       );
       if (!resInscripciones.ok)
         throw new Error("Error al obtener inscripciones");
       const inscripciones = await resInscripciones.json();
+
       if (!inscripciones || inscripciones.length === 0) {
         setEstadisticasGrupos([]);
         setIsLoadingStats(false);
         return;
       }
+
+      // Eliminar inscripciones duplicadas al mismo grupo (quedarse con la más reciente)
+      const inscripcionesUnicas = inscripciones.reduce(
+        (acc: any[], current: any) => {
+          const existe = acc.find((i) => i.idGrupo === current.idGrupo);
+          if (!existe) {
+            acc.push(current);
+          } else {
+            // Si existe, reemplazar con la más reciente
+            const indexExistente = acc.findIndex(
+              (i) => i.idGrupo === current.idGrupo,
+            );
+            if (
+              new Date(current.fechaCreacion) > new Date(existe.fechaCreacion)
+            ) {
+              acc[indexExistente] = current;
+            }
+          }
+          return acc;
+        },
+        [],
+      );
+
       // 2. Obtener todos los grupos, materias y docentes necesarios
-      const grupoIds = inscripciones.map((i: any) => i.idGrupo);
+      const grupoIds = inscripcionesUnicas.map((i: any) => i.idGrupo);
       const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
       const grupos = await resGrupos.json();
+
       const resMaterias = await fetch(`${API_BASE_URL}/api/materias`);
       if (!resMaterias.ok) throw new Error("Error al obtener materias");
       const materias = await resMaterias.json();
+
       const resDocentes = await fetch(`${API_BASE_URL}/api/usuarios`);
       if (!resDocentes.ok) throw new Error("Error al obtener docentes");
       const docentes = await resDocentes.json();
-      // 3. Obtener todas las asistencias del estudiante
+
+      // 3. Obtener todas las asistencias del estudiante (sin filtrar por grupoId)
       const resAsistencias = await fetch(
-        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}`
+        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}`,
       );
       if (!resAsistencias.ok) throw new Error("Error al obtener asistencias");
       const asistencias = await resAsistencias.json();
 
       const estadisticas: EstadisticasGrupo[] = [];
-      for (const inscripcion of inscripciones) {
-        const grupo = grupos.find((g: any) => g.id === inscripcion.idGrupo);
+      for (const inscripcion of inscripcionesUnicas) {
+        const grupo = grupos.find(
+          (g: any) => g.idGrupo === inscripcion.idGrupo,
+        );
         if (!grupo) continue;
-        const materia = materias.find((m: any) => m.id === grupo.idMateria);
+
+        const materia = materias.find(
+          (m: any) => m.idMateria === grupo.idMateria,
+        );
         if (!materia) continue;
-        const grupoId = String(grupo.id);
-        // Filtrar asistencias de este grupo
+        const grupoId = String(grupo.idGrupo);
+        // Filtrar asistencias de este grupo usando idInscripcion
         const asistenciasGrupo = asistencias.filter(
-          (a: any) => a.idGrupo === grupo.id
+          (a: any) => a.idInscripcion === inscripcion.idInscripcion,
         );
         let totalAsistencias = 0;
         let totalRetardos = 0;
         let totalFaltas = 0;
         asistenciasGrupo.forEach((a: any) => {
-          if (a.tipoAsistencia === "Asistencia") totalAsistencias++;
-          else if (a.tipoAsistencia === "Retardo") totalRetardos++;
-          else if (a.tipoAsistencia === "Falta") totalFaltas++;
+          const tipo = (a.tipoAsistencia || "").toUpperCase();
+          if (tipo.includes("ASISTENCIA")) totalAsistencias++;
+          else if (tipo.includes("RETARDO")) totalRetardos++;
+          else if (tipo.includes("FALTA")) totalFaltas++;
         });
         const totalClases = totalAsistencias + totalRetardos + totalFaltas;
         const porcentajeAsistencia =
           totalClases > 0
             ? Math.round(
-                ((totalAsistencias + totalRetardos) / totalClases) * 100
+                ((totalAsistencias + totalRetardos) / totalClases) * 100,
               )
             : 0;
         // Docente
         let nombreDocente = "Docente";
         if (grupo.idDocente) {
-          const docente = docentes.find((d: any) => d.id === grupo.idDocente);
+          const docente = docentes.find(
+            (d: any) => d.idUsuario === grupo.idDocente,
+          );
           if (docente)
             nombreDocente = `${docente.nombre || ""} ${
               docente.apellidoPaterno || ""
             } ${docente.apellidoMaterno || ""}`.trim();
         }
         estadisticas.push({
-          idGrupo: grupo.id,
+          idGrupo: grupo.idGrupo,
           idMateria: grupo.idMateria,
           nombreMateria: materia.nombre || "Materia",
           codigoMateria: materia.codigo || materia.clave || "N/A",
@@ -185,21 +224,16 @@ export const useAsistencias = () => {
     }
   };
 
-  /**
-   * Obtiene las asistencias detalladas de un grupo específico
-   * @param grupoId - ID del grupo inscrito
-   * @param estudianteId - ID del estudiante
-   */
   const fetchAsistenciasDetalladas = async (
     grupoId: string,
-    estudianteId: string
+    estudianteId: string,
   ) => {
     setIsLoading(true);
     setError(null);
     try {
       // Obtener asistencias filtradas por estudiante y grupo
       const res = await fetch(
-        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`
+        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`,
       );
       if (!res.ok) throw new Error("Error al obtener asistencias");
       const asistencias = await res.json();
@@ -207,13 +241,12 @@ export const useAsistencias = () => {
       const asistenciasData: Asistencia[] = asistencias
         .map((a: any): Asistencia => {
           return {
-            // Usar los nombres exactos de la base de datos/backend
             id: a.idAsistencia ?? a.id ?? 0,
             idInscripcion: a.idInscripcion ?? 0,
             idDocente: a.idDocente ?? 0,
             fecha: a.fecha ?? "",
-            horaRegistro: a.horaRegistro ?? "",
-            tipoAsistencia: a.tipoAsistencia ?? "Falta",
+            horaRegistro: a.horaRegistro ?? a.hora ?? "",
+            tipoAsistencia: a.estado ?? a.tipoAsistencia ?? "Falta",
             observaciones: a.observaciones ?? "",
             fechaRegistroAsistencia:
               a.fechaRegistro ?? a.fechaRegistroAsistencia ?? "",
@@ -285,13 +318,6 @@ export const useAsistencias = () => {
     const año = fecha.getFullYear();
     return `${mes} ${año}`;
   };
-
-  /**
-   * Carga inicial de datos al montar el componente
-   * Nota: Ambas funciones ahora requieren estudianteId como parámetro
-   * Se deben llamar manualmente cuando se conozca el ID del estudiante
-   */
-  // useEffect removido - se llama manualmente desde el componente
 
   // Retorna todos los estados y funciones
   return {

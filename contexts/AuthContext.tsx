@@ -14,7 +14,7 @@ interface AuthContextType {
 }
 
 interface User {
-  id: string;
+  idUsuario: string;
   email: string;
   estudianteId?: string; // ID del documento en la colección "estudiantes"
 }
@@ -43,13 +43,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = await AsyncStorage.getItem("token");
-      if (token) {
-        setToken(token);
-        setIsAuthenticated(true);
-        // Aquí podrías agregar lógica para obtener el usuario desde el backend
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const estudianteId = await AsyncStorage.getItem("estudianteId");
+        const userId = await AsyncStorage.getItem("userId");
+        const userEmail = await AsyncStorage.getItem("userEmail");
+
+        if (token) {
+          setToken(token);
+          setIsAuthenticated(true);
+
+          // Si tenemos userId y userEmail, úsalos
+          if (userId && userEmail) {
+            setUser({
+              idUsuario: userId,
+              email: userEmail,
+              estudianteId: estudianteId || undefined,
+            });
+          }
+          // Si solo tenemos estudianteId, crear usuario temporal
+          else if (estudianteId) {
+            setUser({
+              idUsuario: "temp",
+              email: "temp@email.com",
+              estudianteId: estudianteId,
+            });
+          }
+        }
+      } catch (error) {
+        // Error al verificar autenticación
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     checkAuth();
   }, []);
@@ -66,8 +91,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       if (!response.ok) throw new Error("Credenciales incorrectas");
       const data = await response.json();
-      // Guarda el token JWT en AsyncStorage o SecureStore
+      // Guarda el token JWT y los datos del usuario en AsyncStorage
       await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("userId", String(data.user.idUsuario));
+      await AsyncStorage.setItem("userEmail", data.user.email);
+
       // Si es estudiante, guarda el idEstudiante numérico
       if (
         typeof data.user.idEstudiante === "number" &&
@@ -75,13 +103,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       ) {
         await AsyncStorage.setItem(
           "estudianteId",
-          String(data.user.idEstudiante)
+          String(data.user.idEstudiante),
         );
       } else {
         await AsyncStorage.removeItem("estudianteId");
       }
       setUser({
-        id: data.user.idUsuario,
+        idUsuario: data.user.idUsuario,
         email: data.user.email,
         estudianteId: data.user.idEstudiante,
       });
@@ -101,6 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
     try {
       await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("userId");
+      await AsyncStorage.removeItem("userEmail");
+      await AsyncStorage.removeItem("estudianteId");
       setUser(null);
       setToken(null);
       setIsAuthenticated(false);

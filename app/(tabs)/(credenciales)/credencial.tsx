@@ -6,12 +6,21 @@ import {
 import { styles } from "@/constants/credencialStyles";
 import { useCredencial } from "@/hooks/useCredencial";
 import { useEstudiante } from "@/hooks/useEstudiante";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { View } from "react-native";
 
 export default function CredencialScreen() {
   const { estudiante, isLoading, error, refreshData } = useEstudiante();
 
-  const { handleFlip, frontAnimatedStyle, backAnimatedStyle } = useCredencial();
+  useFocusEffect(
+    useCallback(() => {
+      refreshData();
+    }, []),
+  );
+
+  const { handleFlip, frontAnimatedStyle, backAnimatedStyle, showBack } =
+    useCredencial();
 
   if (isLoading) {
     return <LoadingState />;
@@ -33,6 +42,7 @@ export default function CredencialScreen() {
         onFlip={handleFlip}
         frontAnimatedStyle={frontAnimatedStyle}
         backAnimatedStyle={backAnimatedStyle}
+        showBack={showBack}
       />
     </View>
   );

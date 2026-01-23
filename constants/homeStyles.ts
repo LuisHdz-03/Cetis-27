@@ -4,7 +4,6 @@ import { colors } from "./colors";
 export const homeStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.primary,
   },
   scrollView: {
     flex: 1,

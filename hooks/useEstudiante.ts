@@ -30,28 +30,33 @@ export function useEstudiante() {
 
       if (!resolvedEstudianteId) {
         throw new Error(
-          "No hay estudiante autenticado (estudianteId no encontrado en almacenamiento)"
+          "No hay estudiante autenticado (estudianteId no encontrado en almacenamiento)",
         );
       }
 
       // Obtener datos completos del estudiante desde el backend (con joins)
       const res = await fetch(
-        `${API_BASE_URL}/api/estudiantes/${resolvedEstudianteId}`
+        `${API_BASE_URL}/api/estudiantes/${resolvedEstudianteId}`,
       );
       if (!res.ok) throw new Error("No se pudo obtener el estudiante");
       const data = await res.json();
 
       // El backend debe devolver todos los datos necesarios ya "populados"
       const estudianteCompleto: EstudianteCompleto = {
+        idUsuario: data.idUsuario || data.usuario?.idUsuario,
+        foto: data.foto || null,
+
         numeroControl: data.numeroControl || "Sin número",
         nombreCompleto: data.nombreCompleto || "Sin nombre",
         especialidad: data.especialidad || "Sin especialidad",
+
         codigoEspecialidad: data.codigoEspecialidad || "N/A",
         semestre: data.semestre || 1,
         email: data.email || "",
         telefono: data.telefono || "",
         codigoQr: data.codigoQr || "Sin QR",
         fechaIngreso: data.fechaIngreso || "N/A",
+        curp: data.curp || "Sin CURP",
       };
       setEstudiante(estudianteCompleto);
     } catch (err) {

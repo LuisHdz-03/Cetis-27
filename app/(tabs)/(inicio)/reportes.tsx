@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -24,12 +25,19 @@ export default function ReportesScreen() {
 
   // Estado local para controlar qué cards están expandidas
   const [expandedCards, setExpandedCards] = useState<Set<string | number>>(
-    new Set()
+    new Set(),
   );
 
   useEffect(() => {
     fetchReportes();
   }, []);
+
+  // Recargar reportes cuando la pantalla vuelve al foco
+  useFocusEffect(
+    useCallback(() => {
+      fetchReportes();
+    }, []),
+  );
 
   // Función para expandir/colapsar una card
   const toggleCard = (id: string | number) => {
@@ -185,20 +193,20 @@ export default function ReportesScreen() {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
-                            }
+                            },
                           )}
                         </Text>
                       </View>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Reportado por:</Text>
                         <Text style={styles.detailValue}>
-                          {reporte.nombreDocente}
+                          {reporte.nombreFirmaMaestro || "No especificado"}
                         </Text>
                       </View>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Materia:</Text>
                         <Text style={styles.detailValue}>
-                          {reporte.nombreMateria} - Grupo {reporte.codigoGrupo}
+                          {reporte.leClasesReportado} - Grupo {reporte.idGrupo}
                         </Text>
                       </View>
                     </View>
@@ -216,7 +224,7 @@ export default function ReportesScreen() {
                     </View>
 
                     {/* Acciones tomadas (si existen) */}
-                    {reporte.accionesTomadas && (
+                    {reporte.accionTomada && (
                       <View style={styles.descripcionContainer}>
                         <View style={styles.orangeBorder} />
                         <View style={styles.descripcionContent}>
@@ -224,7 +232,7 @@ export default function ReportesScreen() {
                             Acciones Tomadas:
                           </Text>
                           <Text style={styles.descripcionText}>
-                            {reporte.accionesTomadas}
+                            {reporte.accionTomada}
                           </Text>
                         </View>
                       </View>

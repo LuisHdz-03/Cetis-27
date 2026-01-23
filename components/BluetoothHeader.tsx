@@ -1,8 +1,7 @@
 import { colors } from "@/constants/colors";
-import { useBluetooth } from "@/contexts/BluetoothContext";
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Switch, Text, View } from "react-native";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const styles = StyleSheet.create({
   header: {
@@ -18,48 +17,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.white,
   },
-  bluetoothContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  bluetoothIcon: {
-    marginRight: 8,
-  },
-  bluetoothText: {
-    fontSize: 12,
-    color: colors.white,
-    fontWeight: "600",
-  },
-  bluetoothSwitch: {
-    marginLeft: 8,
+  safeAV: {
+    backgroundColor: colors.primary,
   },
 });
 
 export function BluetoothHeader() {
-  const { isEnabled, toggleBluetooth } = useBluetooth();
-
   return (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>CETIS 27</Text>
-      <View style={styles.bluetoothContainer}>
-        <Ionicons
-          name={isEnabled ? "bluetooth" : "bluetooth-outline"}
-          size={20}
-          color={colors.white}
-          style={styles.bluetoothIcon}
-        />
-        <Text style={styles.bluetoothText}>
-          {isEnabled ? "Encendido" : "Apagado"}
-        </Text>
-        <Switch
-          trackColor={{ false: colors.gray[400], true: colors.white }}
-          thumbColor={isEnabled ? colors.primary : colors.white}
-          ios_backgroundColor={colors.gray[400]}
-          onValueChange={toggleBluetooth}
-          value={isEnabled}
-          style={styles.bluetoothSwitch}
-        />
-      </View>
-    </View>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: colors.primary }}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>CETIS 27</Text>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }

@@ -1,10 +1,8 @@
-import { BluetoothHeader } from "@/components/BluetoothHeader";
 import { colors } from "@/constants/colors";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { withLayoutContext } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
@@ -54,8 +52,7 @@ export function TopTabsLayout({
   initialRouteName,
 }: TopTabsLayoutProps) {
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <BluetoothHeader />
+    <View style={styles.safeArea}>
       <View style={styles.tabsContainer}>
         <MaterialTopTabs
           initialRouteName={initialRouteName || screens[0]?.name}
@@ -77,6 +74,6 @@ export function TopTabsLayout({
           ))}
         </MaterialTopTabs>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

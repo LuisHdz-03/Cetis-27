@@ -3,7 +3,7 @@
 // ============================================
 
 export interface Usuario {
-  id: number;
+  idUsuario: number;
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
@@ -21,6 +21,7 @@ export interface Estudiante {
   idUsuario: number; // FK → usuarios
   idEspecialidad: number; // FK → especialidades
   numeroControl: string;
+  curp: string;
   semestreActual: number;
   codigoQr: string;
   fechaIngreso: string;
@@ -150,25 +151,27 @@ export interface Reporte {
   descripcion: string;
   fechaReporte: string; // Fecha del incidente
   gravedad: GravedadReporte; // "ALTA", "MEDIA", "BAJA"
-  estatus: EstatusReporte; // "Pendiente", "revisado", "resuelto"
-  accionesTomadas: string | null; // Puede ser null si aún no se resolvió
-  fechaRegistro: string; // Timestamp de creación del reporte
+  estatus: EstatusReporte; // "Pendiente", "revisado", "resuelto" (convertido desde boolean en backend)
+  accionTomada: string | null; // Acciones tomadas para resolver el reporte
+  fechaCreacion: string; // Timestamp de creación del reporte
   fechaRevision: string | null; // Timestamp de cuando se revisó (puede ser null)
+  lugarEncontraba: string | null; // Lugar donde se encontraba el estudiante durante el incidente
+  leClasesReportado: string | null; // Clases a las que le reportaron
+  nombreFirmaAlumno: string | null; // Nombre y firma del alumno
+  nombreFirmaMaestro: string | null; // Nombre y firma del maestro
+  nombreTutor: string | null; // Nombre del tutor
+  nombrePapaMamaTutor: string | null; // Nombre del padre/madre/tutor
+  telefono: string | null; // Teléfono de contacto
   // Relaciones opcionales (JOINs)
   estudiante?: Estudiante;
   grupo?: Grupo;
   docente?: Docente;
 }
 
-// ============================================
-// 5. INTERFACES AUXILIARES (Para vistas/UI)
-// ============================================
-
-/**
- * Datos completos del estudiante (vista aplanada para UI)
- * Resultado de JOIN entre usuarios, estudiantes, especialidades
- */
 export interface EstudianteCompleto {
+  idUsuario: number;
+  foto: string | null;
+
   numeroControl: string;
   nombreCompleto: string; // usuario.nombre + apellidos
   especialidad: string; // especialidades.nombre
@@ -178,6 +181,7 @@ export interface EstudianteCompleto {
   telefono: string; // usuarios.telefono
   codigoQr: string; // estudiantes.codigoQr
   fechaIngreso: string; // estudiantes.fechaIngreso
+  curp: string; // estudiantes.curp
 }
 
 /**
