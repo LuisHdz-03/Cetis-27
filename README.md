@@ -1,23 +1,13 @@
 # Credencial Digital & Gestión Escolar - CETIS 27
 
-> _"Pesaroso sea el corazón, Penitente."_
-
 Este proyecto es una solución integral móvil desarrollada para la modernización de la gestión estudiantil en el CETIS 27. Permite a los alumnos portar una identificación digital segura, consultar su historial académico y gestionar reportes en tiempo real.
 
-Desarrollado con la arquitectura y estándares de **dKw Tech Solutions**.
-
 ---
-
-## Galería del Milagro (Capturas de Pantalla)
-
-> _"Pues retorcidos son, fueron y serán, los caminos del diseño UI."_
 
 |                      Login                      |                 Credencial Digital                 |                    Reportes                    |
 | :---------------------------------------------: | :------------------------------------------------: | :--------------------------------------------: |
 | ![Login Screen](./assets/screenshots/login.png) | ![Credencial](./assets/screenshots/credencial.png) | ![Reportes](./assets/screenshots/reportes.png) |
 |                 _Acceso Seguro_                 |                   _QR Dinámico_                    |            _Gestión de Incidencias_            |
-
-_(Nota: Las imágenes se agregarán próximamente)_
 
 ---
 
