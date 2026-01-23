@@ -6,26 +6,17 @@ import {
   withTiming,
 } from "react-native-reanimated";
 
-/**
- * Hook personalizado para manejar la lógica de volteo de la credencial
- * @returns {Object} Objeto con estados y funciones para controlar el volteo
- */
 export function useCredencial() {
   const [showBack, setShowBack] = useState(false);
   const rotation = useSharedValue(0);
   const isAnimating = useRef(false);
 
-  /**
-   * Maneja el volteo de la tarjeta con animación
-   */
   const handleFlip = () => {
-    // Evitar múltiples clics durante la animación
     if (isAnimating.current) return;
 
     isAnimating.current = true;
     const newShowBack = !showBack;
 
-    // Alternar entre 0 y 180 grados en lugar de acumular
     rotation.value = withTiming(newShowBack ? 180 : 0, { duration: 600 });
 
     setTimeout(() => {
@@ -34,9 +25,6 @@ export function useCredencial() {
     }, 300);
   };
 
-  /**
-   * Estilo animado para la parte frontal de la tarjeta
-   */
   const frontAnimatedStyle = useAnimatedStyle(() => {
     const rotateY = interpolate(rotation.value, [0, 180], [0, 180]);
     return {
@@ -45,9 +33,6 @@ export function useCredencial() {
     };
   });
 
-  /**
-   * Estilo animado para la parte trasera de la tarjeta
-   */
   const backAnimatedStyle = useAnimatedStyle(() => {
     const rotateY = interpolate(rotation.value, [0, 180], [180, 360]);
     return {

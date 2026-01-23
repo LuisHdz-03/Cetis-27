@@ -6,9 +6,6 @@ interface LoadingStateProps {
   message?: string;
 }
 
-/**
- * Componente para mostrar el estado de carga
- */
 export function LoadingState({
   message = "Cargando credencial...",
 }: LoadingStateProps) {
@@ -25,9 +22,6 @@ interface ErrorStateProps {
   onRetry: () => void;
 }
 
-/**
- * Componente para mostrar el estado de error
- */
 export function ErrorState({ error, onRetry }: ErrorStateProps) {
   return (
     <View style={styles.loadingContainer}>

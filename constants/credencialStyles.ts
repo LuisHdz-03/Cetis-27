@@ -9,7 +9,36 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: colors.gray[600],
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.red[600],
+    textAlign: "center",
+    marginBottom: 16,
+    paddingHorizontal: 40,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "600",
+  },
   cardContainer: {
     width: "100%",
     maxWidth: 380,

@@ -17,7 +17,6 @@ router.get("/", async (req, res) => {
 
     console.log("Reportes desde BD:", JSON.stringify(reportes, null, 2));
 
-    // Convertir el campo booleano 'estatus' a texto para el frontend
     const reportesFormateados = reportes.map((reporte) => {
       const formateado = {
         ...reporte,

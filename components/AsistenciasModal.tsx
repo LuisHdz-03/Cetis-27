@@ -41,7 +41,6 @@ export default function AsistenciasModal({
       new Set(asistenciasDetalladas.map((a) => a.fecha)),
     ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-    // Crear objeto con los datos organizados por fecha
     const tabla: Record<
       string,
       {
@@ -70,20 +69,15 @@ export default function AsistenciasModal({
       else if (tipo.includes("retardo")) tabla[fechaKey].retardo++;
       else if (tipo.includes("falta")) tabla[fechaKey].falta++;
 
-      // 3. CAPTURA DE HORA
-      // Si tenemos hora de registro, la formateamos bonita (HH:MM)
       if (!tabla[fechaKey].hora && item.horaRegistro) {
         const horaRaw = item.horaRegistro;
         try {
-          // Intentamos sacar solo la hora
           const dateObj = new Date(horaRaw);
-          // Formato corto: 08:15
           const horaFormateada = dateObj.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
           });
-          // Si sale "Invalid Date" (pasa a veces en Android), hacemos fallback manual
           tabla[fechaKey].hora =
             horaFormateada !== "Invalid Date"
               ? horaFormateada
@@ -94,7 +88,6 @@ export default function AsistenciasModal({
       }
     });
 
-    // Ordenamos las fechas (Keys) de la más reciente a la más antigua
     const fechasOrdenadas = Object.keys(tabla).sort(
       (a, b) => new Date(b).getTime() - new Date(a).getTime(),
     );
@@ -103,7 +96,6 @@ export default function AsistenciasModal({
 
   const { fechasUnicas, tabla } = getTableData();
 
-  // Función para formatear fecha a DD/MM/AAAA
   const formatearFecha = (fecha: string) => {
     try {
       const date = new Date(fecha);
@@ -112,7 +104,7 @@ export default function AsistenciasModal({
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
     } catch (error) {
-      return fecha; // Si falla, retornar la fecha original
+      return fecha;
     }
   };
 
@@ -139,7 +131,6 @@ export default function AsistenciasModal({
             showsVerticalScrollIndicator={true}
             contentContainerStyle={styles.modalBodyContent}
           >
-            {/* Estado de carga */}
             {isLoading ? (
               <View style={{ padding: 40, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -154,23 +145,19 @@ export default function AsistenciasModal({
                 </Text>
               </View>
             ) : error ? (
-              /* Estado de error */
               <View style={{ padding: 40, alignItems: "center" }}>
                 <Text style={{ fontSize: 16, color: colors.rojoFaltas }}>
                   Error: {error}
                 </Text>
               </View>
             ) : asistenciasDetalladas.length === 0 ? (
-              /* Estado vacío */
               <View style={{ padding: 40, alignItems: "center" }}>
                 <Text style={{ fontSize: 16, color: colors.gray[700] }}>
                   No hay asistencias registradas
                 </Text>
               </View>
             ) : (
-              /* Tabla estilo Excel */
               <View style={styles.tableContainer}>
-                {/* Encabezados */}
                 <View style={styles.tableRow}>
                   <View style={[styles.headerCell, styles.firstColumn]}>
                     <Text style={styles.headerText}>Fecha</Text>
@@ -186,7 +173,6 @@ export default function AsistenciasModal({
                   </View>
                 </View>
 
-                {/* Filas de datos */}
                 {fechasUnicas.map((fecha, index) => (
                   <View
                     key={fecha}

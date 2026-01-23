@@ -1,6 +1,3 @@
-// hooks/useAsistencias.ts
-// Custom hook para manejar toda la lógica de asistencias y backend
-
 import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import type {
@@ -8,15 +5,13 @@ import type {
   EstadisticasGrupo,
   TipoAsistencia,
 } from "@/types/database";
-import { useState } from "react"; // Eliminar import duplicado
+import { useState } from "react";
 
-// Re-exportar tipos para compatibilidad
 export type { Asistencia, EstadisticasGrupo, TipoAsistencia };
 
-// Interfaces auxiliares para componentes UI
 export interface MateriaPickerOption {
   label: string;
-  value: string; // idGrupo en string para el Picker
+  value: string;
 }
 
 export interface IconData {
@@ -24,12 +19,7 @@ export interface IconData {
   color: string;
 }
 
-/**
- * Custom Hook para gestionar asistencias
- * Centraliza toda la lógica de backend y estados relacionados
- */
 export const useAsistencias = () => {
-  // Estados
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [estadisticasGrupos, setEstadisticasGrupos] = useState<
     EstadisticasGrupo[]
@@ -41,13 +31,8 @@ export const useAsistencias = () => {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Obtiene los grupos inscritos del estudiante para el picker
-   * (Lee de: inscripciones → grupos → materias)
-   */
   const fetchGruposParaPicker = async (estudianteId: string) => {
     try {
-      // 1. Obtener inscripciones del estudiante
       const resInscripciones = await fetch(
         `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
       );
@@ -59,7 +44,6 @@ export const useAsistencias = () => {
         return;
       }
 
-      // 2. Obtener todos los grupos y materias necesarios en paralelo
       const grupoIds = inscripciones.map((i: any) => i.idGrupo);
       const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
@@ -93,13 +77,9 @@ export const useAsistencias = () => {
     }
   };
 
-  /**
-   * Obtiene las estadísticas de asistencia por grupo
-   */
   const fetchEstadisticasGrupos = async (estudianteId: string) => {
     setIsLoadingStats(true);
     try {
-      // 1. Obtener inscripciones del estudiante
       const resInscripciones = await fetch(
         `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
       );
@@ -112,15 +92,12 @@ export const useAsistencias = () => {
         setIsLoadingStats(false);
         return;
       }
-
-      // Eliminar inscripciones duplicadas al mismo grupo (quedarse con la más reciente)
       const inscripcionesUnicas = inscripciones.reduce(
         (acc: any[], current: any) => {
           const existe = acc.find((i) => i.idGrupo === current.idGrupo);
           if (!existe) {
             acc.push(current);
           } else {
-            // Si existe, reemplazar con la más reciente
             const indexExistente = acc.findIndex(
               (i) => i.idGrupo === current.idGrupo,
             );
@@ -135,7 +112,6 @@ export const useAsistencias = () => {
         [],
       );
 
-      // 2. Obtener todos los grupos, materias y docentes necesarios
       const grupoIds = inscripcionesUnicas.map((i: any) => i.idGrupo);
       const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
       if (!resGrupos.ok) throw new Error("Error al obtener grupos");
@@ -149,7 +125,6 @@ export const useAsistencias = () => {
       if (!resDocentes.ok) throw new Error("Error al obtener docentes");
       const docentes = await resDocentes.json();
 
-      // 3. Obtener todas las asistencias del estudiante (sin filtrar por grupoId)
       const resAsistencias = await fetch(
         `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}`,
       );
@@ -168,7 +143,6 @@ export const useAsistencias = () => {
         );
         if (!materia) continue;
         const grupoId = String(grupo.idGrupo);
-        // Filtrar asistencias de este grupo usando idInscripcion
         const asistenciasGrupo = asistencias.filter(
           (a: any) => a.idInscripcion === inscripcion.idInscripcion,
         );
@@ -188,7 +162,6 @@ export const useAsistencias = () => {
                 ((totalAsistencias + totalRetardos) / totalClases) * 100,
               )
             : 0;
-        // Docente
         let nombreDocente = "Docente";
         if (grupo.idDocente) {
           const docente = docentes.find(
@@ -231,13 +204,11 @@ export const useAsistencias = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Obtener asistencias filtradas por estudiante y grupo
       const res = await fetch(
         `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`,
       );
       if (!res.ok) throw new Error("Error al obtener asistencias");
       const asistencias = await res.json();
-      // Adaptar formato para la UI
       const asistenciasData: Asistencia[] = asistencias
         .map((a: any): Asistencia => {
           return {
@@ -253,7 +224,6 @@ export const useAsistencias = () => {
           };
         })
         .sort((a: Asistencia, b: Asistencia) => {
-          // Ordenar por fecha descendente
           return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
         });
       setAsistencias(asistenciasData);
@@ -264,11 +234,6 @@ export const useAsistencias = () => {
       setIsLoading(false);
     }
   };
-
-  /**
-   * Obtiene el ícono y color según el tipo de asistencia
-   * @param tipo - Tipo de asistencia
-   */
   const getIconForTipo = (tipo: string): IconData => {
     switch (tipo.toLowerCase()) {
       case "asistencia":
@@ -294,10 +259,6 @@ export const useAsistencias = () => {
     }
   };
 
-  /**
-   * Obtiene el mes y año actual en español
-   * En producción, esto podría venir de la API (periodo académico actual)
-   */
   const getMonthYearString = () => {
     const meses = [
       "Enero",
@@ -319,17 +280,13 @@ export const useAsistencias = () => {
     return `${mes} ${año}`;
   };
 
-  // Retorna todos los estados y funciones
   return {
-    // Estados
     asistencias,
     estadisticasGrupos,
     gruposParaPicker,
     isLoading,
     isLoadingStats,
     error,
-
-    // Funciones
     fetchGruposParaPicker,
     fetchEstadisticasGrupos,
     fetchAsistenciasDetalladas,

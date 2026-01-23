@@ -147,7 +147,6 @@ export default function PerfilScreen() {
           </View>
         ) : estudiante ? (
           <>
-            {/* Avatar y nombre destacado */}
             <View style={styles.profileHeader}>
               <TouchableOpacity onPress={pickImage} disabled={uploading}>
                 <View
@@ -185,7 +184,6 @@ export default function PerfilScreen() {
               </View>
             </View>
 
-            {/* Tarjeta de información académica */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="school" size={20} color={colors.primary} />
@@ -238,7 +236,6 @@ export default function PerfilScreen() {
               </View>
             </View>
 
-            {/* Tarjeta de información de contacto */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="call" size={20} color={colors.primary} />

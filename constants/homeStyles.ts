@@ -19,7 +19,6 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: 20,
   },
-  // Header del perfil con avatar
   profileHeader: {
     alignItems: "center",
     paddingVertical: 30,

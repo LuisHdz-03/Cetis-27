@@ -54,13 +54,10 @@ export function CredencialCard({
       onPress={onFlip}
       style={styles.cardContainer}
     >
-      {/* PARTE FRONTAL */}
       <Animated.View
         style={[styles.card, styles.cardFront, frontAnimatedStyle]}
       >
-        {/* Contenedor principal que ocupa el espacio disponible */}
         <View style={styles.contentContainer}>
-          {/* FotosSEP */}
           <View style={styles.headerFotos}>
             <Image
               source={require("@/assets/images/SEP.png")}
@@ -71,8 +68,6 @@ export function CredencialCard({
               style={styles.imageSep}
             />
           </View>
-
-          {/* Contenido principal */}
           <View style={styles.mainContentFront}>
             <View style={styles.fotoNoControl}>
               <View style={[styles.avatarContainer, { overflow: "hidden" }]}>
@@ -93,7 +88,6 @@ export function CredencialCard({
               </Text>
             </View>
 
-            {/* Información (lado derecho) */}
             <View style={styles.infoContainerFront}>
               <Text style={styles.cetisTitulo} numberOfLines={2}>
                 CENTRO DE ESTUDIOS TECNOLÓGICOS INDUSTRIAL Y DE SERVICIOS No. 27
@@ -117,11 +111,9 @@ export function CredencialCard({
         </View>
       </Animated.View>
 
-      {/* PARTE TRASERA */}
       <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
         <View style={styles.barraTurno}>
           <View style={styles.turnosYfechas}>
-            {/*contenedor de los turnos y fechas*/}
             <View style={styles.soloTurnos}>
               <Text style={[styles.textoTurno, styles.margenesTexto1]}>
                 SISTEMA ESCOLARIZADO
@@ -131,7 +123,6 @@ export function CredencialCard({
               </Text>
             </View>
 
-            {/*contenedor de las fechas*/}
             {periodo && (
               <View style={styles.soloFechas}>
                 <Text style={styles.textFechas}>FECHA DE EMISIÓN:</Text>
@@ -189,7 +180,6 @@ export function CredencialCard({
         </View>
       </Animated.View>
 
-      {/* Modal para QR ampliado */}
       <Modal
         visible={qrModalVisible}
         transparent={true}

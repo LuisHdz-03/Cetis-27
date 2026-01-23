@@ -16,7 +16,7 @@ interface AuthContextType {
 interface User {
   idUsuario: string;
   email: string;
-  estudianteId?: string; // ID del documento en la colección "estudiantes"
+  estudianteId?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,9 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Aquí podrías agregar lógica para verificar si hay un JWT guardado en AsyncStorage
-  // y establecer el usuario autenticado si existe
-
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -53,16 +50,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setToken(token);
           setIsAuthenticated(true);
 
-          // Si tenemos userId y userEmail, úsalos
           if (userId && userEmail) {
             setUser({
               idUsuario: userId,
               email: userEmail,
               estudianteId: estudianteId || undefined,
             });
-          }
-          // Si solo tenemos estudianteId, crear usuario temporal
-          else if (estudianteId) {
+          } else if (estudianteId) {
             setUser({
               idUsuario: "temp",
               email: "temp@email.com",
@@ -71,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       } catch (error) {
-        // Error al verificar autenticación
       } finally {
         setLoading(false);
       }
@@ -79,7 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
-  // Nuevo login usando el backend con JWT
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
@@ -91,12 +83,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       if (!response.ok) throw new Error("Credenciales incorrectas");
       const data = await response.json();
-      // Guarda el token JWT y los datos del usuario en AsyncStorage
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("userId", String(data.user.idUsuario));
       await AsyncStorage.setItem("userEmail", data.user.email);
 
-      // Si es estudiante, guarda el idEstudiante numérico
       if (
         typeof data.user.idEstudiante === "number" &&
         !isNaN(data.user.idEstudiante)

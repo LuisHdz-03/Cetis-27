@@ -3,19 +3,15 @@ const router = express.Router();
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// ----------------------------------------------------
-// 1. GET: Obtener TODOS los estudiantes
-// ----------------------------------------------------
 router.get("/", async (req, res) => {
   try {
     const estudiantes = await prisma.estudiante.findMany({
       include: {
-        usuario: true, // Incluimos info del usuario para ver nombres
+        usuario: true,
         especialidad: true,
       },
     });
 
-    // Convertimos BigInt a String para que no truene el JSON
     const respuesta = estudiantes.map((e) => ({
       ...e,
       numeroControl: e.numeroControl ? e.numeroControl.toString() : "N/A",
@@ -28,9 +24,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ----------------------------------------------------
-// 2. GET: Obtener UN estudiante por ID
-// ----------------------------------------------------
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -46,7 +39,6 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Estudiante no encontrado" });
     }
 
-    // Formatear respuesta para el frontend
     const nombreCompleto = estudiante.usuario
       ? `${estudiante.usuario.nombre} ${estudiante.usuario.apellidoPaterno || ""} ${estudiante.usuario.apellidoMaterno || ""}`.trim()
       : "Sin nombre";
@@ -63,13 +55,12 @@ router.get("/:id", async (req, res) => {
         : "N/A",
       semestre: estudiante.semestreActual,
       email: estudiante.usuario ? estudiante.usuario.email : "",
-      telefono: estudiante.telefono, // Telefono del estudiante
+      telefono: estudiante.telefono,
       codigoQr: estudiante.codigoQr,
       fechaIngreso: estudiante.fechaIngreso
         ? estudiante.fechaIngreso.toISOString().split("T")[0]
         : "N/A",
       curp: estudiante.curp,
-      // AQUÍ MANDAMOS LA FOTO BASE64
       foto: estudiante.foto,
     };
 
@@ -80,9 +71,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ----------------------------------------------------
-// 3. POST: CREAR estudiante (¡ESTA FALTABA!)
-// ----------------------------------------------------
 router.post("/", async (req, res) => {
   try {
     const {
@@ -101,18 +89,17 @@ router.post("/", async (req, res) => {
       data: {
         idUsuario,
         idEspecialidad,
-        numeroControl: BigInt(numeroControl), // Convertimos a BigInt
+        numeroControl: BigInt(numeroControl),
         curp,
         direccion,
         telefono,
         semestreActual,
-        fechaNacimiento: new Date(fechaNacimiento), // Convertimos a Fecha
-        fechaIngreso: new Date(fechaIngreso), // Convertimos a Fecha
+        fechaNacimiento: new Date(fechaNacimiento),
+        fechaIngreso: new Date(fechaIngreso),
         fechaCreacion: new Date(),
       },
     });
 
-    // Respondemos convirtiendo el BigInt a String
     res.json({
       ...nuevoEstudiante,
       numeroControl: String(nuevoEstudiante.numeroControl),
@@ -123,24 +110,19 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ----------------------------------------------------
-// 4. POST: Subir FOTO (Versión Base64 para Railway)
-// ----------------------------------------------------
 router.post("/:id/foto", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
 
-    // Recibimos el string gigante directo del body
     const { fotoBase64 } = req.body;
 
     if (!fotoBase64) {
       return res.status(400).json({ error: "No se envió 'fotoBase64'" });
     }
 
-    // Actualizamos la BD
     const estudianteActualizado = await prisma.estudiante.update({
       where: { idEstudiante: id },
-      data: { foto: fotoBase64 }, // Guardamos en el campo LONGTEXT
+      data: { foto: fotoBase64 },
     });
 
     res.json({

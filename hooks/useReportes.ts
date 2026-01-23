@@ -1,6 +1,3 @@
-// hooks/useReportes.ts
-// Custom hook para manejar toda la lógica de reportes e incidencias
-
 import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,7 +19,6 @@ export type {
   TipoReporte,
 };
 
-// Interfaces auxiliares para configuración de UI
 export interface SeverityConfig {
   bgColor: string;
   borderColor: string;
@@ -37,25 +33,17 @@ export interface StatusConfig {
   icon: "time" | "eye" | "checkmark-circle";
 }
 
-/**
- * Custom Hook para gestionar reportes e incidencias
- * Centraliza toda la lógica de backend y estados relacionados
- */
 export const useReportes = () => {
-  // Estados
+  // El silencio es vuestra penitencia.
   const [reportes, setReportes] = useState<ReporteDetallado[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  /**
-   * Obtiene los reportes del estudiante
-   */
   const fetchReportes = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Obtener estudianteId desde AuthContext o AsyncStorage
       let estudianteId = user?.estudianteId;
       if (!estudianteId) {
         estudianteId =
@@ -67,7 +55,6 @@ export const useReportes = () => {
         );
       }
 
-      // Obtener reportes del backend (con joins y datos completos)
       const res = await fetch(
         `${API_BASE_URL}/api/reportes?estudianteId=${estudianteId}`,
       );
@@ -85,10 +72,6 @@ export const useReportes = () => {
       setIsLoading(false);
     }
   };
-
-  /**
-   * Obtiene la configuración de colores según la severidad
-   */
   const getSeverityConfig = (
     severity: "ALTA" | "MEDIA" | "BAJA",
   ): SeverityConfig => {
@@ -120,12 +103,7 @@ export const useReportes = () => {
     }
   };
 
-  /**
-   * Obtiene la configuración de colores según el estatus
-   * Nota: BD usa capitalización mixta ("Pendiente", "revisado", "resuelto")
-   */
   const getStatusConfig = (estatus: EstatusReporte): StatusConfig => {
-    // Validar que estatus existe antes de usar toUpperCase
     if (!estatus) {
       return {
         bgColor: colors.gray[50],
@@ -134,7 +112,6 @@ export const useReportes = () => {
       };
     }
 
-    // Normalizar a uppercase para comparación
     const statusUpper = estatus.toUpperCase();
 
     switch (statusUpper) {
@@ -157,7 +134,6 @@ export const useReportes = () => {
           icon: "checkmark-circle" as const,
         };
       default:
-        // Fallback para valores inesperados
         return {
           bgColor: colors.gray[50],
           textColor: colors.gray[700],
@@ -167,7 +143,6 @@ export const useReportes = () => {
   };
 
   useEffect(() => {
-    // Cargar automáticamente cuando haya usuario autenticado
     if (user?.estudianteId) {
       fetchReportes();
     }

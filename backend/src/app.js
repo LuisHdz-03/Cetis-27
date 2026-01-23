@@ -11,16 +11,13 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
 
-// Rutas de ejemplo
 app.get("/", (req, res) => {
   res.send("API funcionando");
 });
 
-// Importar y usar la ruta de estudiantes
 const estudiantesRoutes = require("./routes/estudiantes");
 app.use("/api/estudiantes", estudiantesRoutes);
 
-// Importar y usar la ruta de usuarios
 const usuariosRoutes = require("./routes/usuarios");
 app.use("/api/usuarios", usuariosRoutes);
 

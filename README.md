@@ -1,50 +1,32 @@
-# Welcome to your Expo app 👋
+# Credencial Digital & Gestión Escolar - CETIS 27
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> _"Pesaroso sea el corazón, Penitente."_
 
-## Get started
+Este proyecto es una solución integral móvil desarrollada para la modernización de la gestión estudiantil en el CETIS 27. Permite a los alumnos portar una identificación digital segura, consultar su historial académico y gestionar reportes en tiempo real.
 
-1. Install dependencies
+Desarrollado con la arquitectura y estándares de **dKw Tech Solutions**.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Galería del Milagro (Capturas de Pantalla)
 
-   ```bash
-   npx expo start
-   ```
+> _"Pues retorcidos son, fueron y serán, los caminos del diseño UI."_
 
-In the output, you'll find options to open the app in a
+|                      Login                      |                 Credencial Digital                 |                    Reportes                    |
+| :---------------------------------------------: | :------------------------------------------------: | :--------------------------------------------: |
+| ![Login Screen](./assets/screenshots/login.png) | ![Credencial](./assets/screenshots/credencial.png) | ![Reportes](./assets/screenshots/reportes.png) |
+|                 _Acceso Seguro_                 |                   _QR Dinámico_                    |            _Gestión de Incidencias_            |
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+_(Nota: Las imágenes se agregarán próximamente)_
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## Stack Tecnológico
 
-When you're ready, run:
+La arquitectura está construida sobre tecnologías modernas y escalables:
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Frontend:** React Native (Expo SDK 52) + TypeScript.
+- **Backend:** Node.js + Express.
+- **Base de Datos:** MySQL (Gestionada con Prisma ORM).
+- **Nube:** Railway (Despliegue) & Cloudinary (Gestión de Media).
+- **Seguridad:** Autenticación vía JWT y encriptación de datos sensibles.
