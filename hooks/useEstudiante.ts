@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "@/constants/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type {
   Especialidad,
@@ -6,6 +5,7 @@ import type {
   EstudianteCompleto,
   Usuario,
 } from "@/types/database";
+import { apiGet } from "@/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 
@@ -31,11 +31,10 @@ export function useEstudiante() {
           "No hay estudiante autenticado (estudianteId no encontrado en almacenamiento)",
         );
       }
-      const res = await fetch(
-        `${API_BASE_URL}/api/estudiantes/${resolvedEstudianteId}`,
+
+      const data = await apiGet<any>(
+        `/api/estudiantes/${resolvedEstudianteId}`,
       );
-      if (!res.ok) throw new Error("No se pudo obtener el estudiante");
-      const data = await res.json();
 
       const estudianteCompleto: EstudianteCompleto = {
         idUsuario: data.idUsuario || data.usuario?.idUsuario,
