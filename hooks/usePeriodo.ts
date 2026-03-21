@@ -1,17 +1,8 @@
 import { API_BASE_URL } from "@/constants/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
-interface Periodo {
-  idPeriodo: number;
-  nombre: string;
-  fechaInicio: string;
-  fechaFin: string;
-  activo: boolean;
-  fechaCreacion: string;
-  fechaEdicion: string;
-}
-
-interface PeriodoFormateado {
+interface FechasFormateadas {
   fechaEmision: string;
   vigencia: string;
 }
@@ -31,7 +22,8 @@ const meses = [
   "Diciembre",
 ];
 
-const formatearFecha = (fechaISO: string): string => {
+const formatearFecha = (fechaISO: string | null): string => {
+  if (!fechaISO) return "---";
   const fecha = new Date(fechaISO);
   const mes = meses[fecha.getMonth()];
   const año = fecha.getFullYear();
@@ -39,40 +31,50 @@ const formatearFecha = (fechaISO: string): string => {
 };
 
 export function usePeriodo() {
-  const [periodo, setPeriodo] = useState<PeriodoFormateado | null>(null);
+  const [fechas, setFechas] = useState<FechasFormateadas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPeriodoActivo = async () => {
+    const fetchDatosEstudiante = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const res = await fetch(`${API_BASE_URL}/api/periodos`);
-        if (!res.ok) throw new Error("No se pudo obtener el periodo");
+        const token = await AsyncStorage.getItem("token");
+        if (!token) throw new Error("No hay sesión activa");
 
-        const data: Periodo[] = await res.json();
-        const periodoActivo = data.find((p) => p.activo === true);
+        // Llamamos al endpoint del perfil del alumno logueado
+        const res = await fetch(`${API_BASE_URL}/api/movil/perfil`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (periodoActivo) {
-          setPeriodo({
-            fechaEmision: formatearFecha(periodoActivo.fechaInicio),
-            vigencia: formatearFecha(periodoActivo.fechaFin),
+        if (!res.ok)
+          throw new Error("No se pudieron obtener las fechas de la credencial");
+
+        const estudiante = await res.json();
+
+        // Usamos las fechas específicas del registro del estudiante en la BD
+        if (estudiante) {
+          setFechas({
+            fechaEmision: formatearFecha(estudiante.credencialFechaEmision),
+            vigencia: formatearFecha(estudiante.credencialFechaExpiracion),
           });
-        } else {
-          setError("No hay periodo activo");
         }
       } catch (err) {
-        console.error("Error al obtener periodo:", err);
+        console.error("Error al obtener fechas de credencial:", err);
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPeriodoActivo();
+    fetchDatosEstudiante();
   }, []);
 
-  return { periodo, isLoading, error };
+  return { fechas, isLoading, error };
 }
