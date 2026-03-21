@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/constants/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type {
   Especialidad,
@@ -5,7 +6,6 @@ import type {
   EstudianteCompleto,
   Usuario,
 } from "@/types/database";
-import { apiGet } from "@/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 
@@ -24,34 +24,42 @@ export function useEstudiante() {
       setIsLoading(true);
       setError(null);
 
-      const resolvedEstudianteId = await AsyncStorage.getItem("estudianteId");
+      const currentToken = token || (await AsyncStorage.getItem("token"));
 
-      if (!resolvedEstudianteId) {
-        throw new Error(
-          "No hay estudiante autenticado (estudianteId no encontrado en almacenamiento)",
-        );
+      if (!currentToken) {
+        throw new Error("No hay sesión activa (token no encontrado)");
       }
 
-      const data = await apiGet<any>(
-        `/api/estudiantes/${resolvedEstudianteId}`,
-      );
+      const res = await fetch(`${API_BASE_URL}/api/movil/perfil`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("No se pudo obtener el estudiante");
+      const data = await res.json();
 
       const estudianteCompleto: EstudianteCompleto = {
-        idUsuario: data.idUsuario || data.usuario?.idUsuario,
-        foto: data.foto || null,
+        idUsuario: data.usuario?.idUsuario,
+        foto: data.estudiante?.fotoUrl || null,
 
-        numeroControl: data.numeroControl || "Sin número",
-        nombreCompleto: data.nombreCompleto || "Sin nombre",
-        especialidad: data.especialidad || "Sin especialidad",
+        numeroControl: data.estudiante?.matricula || "Sin número",
+        nombreCompleto: `${data.usuario?.nombre} ${data.usuario?.apellidoPaterno} ${data.usuario?.apellidoMaterno}`,
+        especialidad:
+          data.estudiante?.grupo?.especialidad?.nombre || "Sin especialidad",
 
-        codigoEspecialidad: data.codigoEspecialidad || "N/A",
-        semestre: data.semestre || 1,
-        email: data.email || "",
-        telefono: data.telefono || "",
-        codigoQr: data.codigoQr || "Sin QR",
-        fechaIngreso: data.fechaIngreso || "N/A",
-        curp: data.curp || "Sin CURP",
+        codigoEspecialidad:
+          data.estudiante?.grupo?.especialidad?.codigo || "N/A",
+        semestre: data.estudiante?.semestre || 1,
+        email: data.usuario?.email || "",
+        telefono: data.usuario?.telefono || "",
+        codigoQr: data.estudiante?.matricula || "Sin QR",
+        fechaIngreso: data.estudiante?.fechaIngreso || "N/A",
+        curp: data.usuario?.curp || "Sin CURP",
       };
+
       setEstudiante(estudianteCompleto);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");

@@ -1,6 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { API_BASE_URL } from "@/constants/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
@@ -56,15 +55,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               email: userEmail,
               estudianteId: estudianteId || undefined,
             });
-          } else if (estudianteId) {
-            setUser({
-              idUsuario: "temp",
-              email: "temp@email.com",
-              estudianteId: estudianteId,
-            });
           }
         }
       } catch (error) {
+        console.error("Error al cargar datos del almacenamiento:", error);
       } finally {
         setLoading(false);
       }
@@ -76,38 +70,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      console.log(`📡 Intentando login en: ${API_BASE_URL}/api/web/auth/login`);
+
+      const response = await fetch(`${API_BASE_URL}/api/web/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          plataforma: "MOVIL",
+        }),
       });
-      if (!response.ok) throw new Error("Credenciales incorrectas");
-      const data = await response.json();
-      await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("userId", String(data.user.idUsuario));
-      await AsyncStorage.setItem("userEmail", data.user.email);
 
-      if (
-        typeof data.user.idEstudiante === "number" &&
-        !isNaN(data.user.idEstudiante)
-      ) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Credenciales incorrectas");
+      }
+
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("userId", String(data.usuario.id));
+      await AsyncStorage.setItem("userEmail", email);
+
+      if (data.usuario.rol === "ALUMNO" && data.usuario.datos) {
         await AsyncStorage.setItem(
           "estudianteId",
-          String(data.user.idEstudiante),
+          String(data.usuario.datos.idEstudiante),
         );
+        setUser({
+          idUsuario: String(data.usuario.id),
+          email: email,
+          estudianteId: String(data.usuario.datos.idEstudiante),
+        });
       } else {
-        await AsyncStorage.removeItem("estudianteId");
+        setUser({
+          idUsuario: String(data.usuario.id),
+          email: email,
+        });
       }
-      setUser({
-        idUsuario: data.user.idUsuario,
-        email: data.user.email,
-        estudianteId: data.user.idEstudiante,
-      });
+
       setToken(data.token);
       setIsAuthenticated(true);
       return true;
-    } catch (error) {
-      setError("Error al iniciar sesión");
+    } catch (err: any) {
+      console.error("Error de Login:", err.message);
+      setError(err.message || "Error al iniciar sesión");
       return false;
     } finally {
       setLoading(false);
