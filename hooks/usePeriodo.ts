@@ -31,50 +31,32 @@ const formatearFecha = (fechaISO: string | null): string => {
 };
 
 export function usePeriodo() {
-  const [fechas, setFechas] = useState<FechasFormateadas | null>(null);
+  const [datosCredencial, setDatosCredencial] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDatosEstudiante = async () => {
+    const fetchCredencial = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
         const token = await AsyncStorage.getItem("token");
-        if (!token) throw new Error("No hay sesión activa");
-
-        // Llamamos al endpoint del perfil del alumno logueado
-        const res = await fetch(`${API_BASE_URL}/api/movil/perfil`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await fetch(`${API_BASE_URL}/api/movil/credencial`, {
+          // <--- Ruta de getCredencial
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok)
-          throw new Error("No se pudieron obtener las fechas de la credencial");
+        const data = await res.json();
 
-        const estudiante = await res.json();
-
-        // Usamos las fechas específicas del registro del estudiante en la BD
-        if (estudiante) {
-          setFechas({
-            fechaEmision: formatearFecha(estudiante.credencialFechaEmision),
-            vigencia: formatearFecha(estudiante.credencialFechaExpiracion),
-          });
-        }
+        setDatosCredencial({
+          fechaEmision: data.emision,
+          vigencia: data.vigencia,
+        });
       } catch (err) {
-        console.error("Error al obtener fechas de credencial:", err);
-        setError(err instanceof Error ? err.message : "Error desconocido");
+        console.error("Error:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchDatosEstudiante();
+    fetchCredencial();
   }, []);
 
-  return { fechas, isLoading, error };
+  return { fechas: datosCredencial, isLoading };
 }

@@ -1,6 +1,15 @@
 import { API_BASE_URL } from "@/constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
+
+interface User {
+  id: string;
+  email: string;
+  rol: string;
+  nombre: string;
+  estudianteId?: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -12,66 +21,49 @@ interface AuthContextType {
   error: string | null;
 }
 
-interface User {
-  idUsuario: string;
-  email: string;
-  estudianteId?: string;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (!context)
     throw new Error("useAuth debe usarse dentro de un AuthProvider");
-  }
   return context;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadStorageData = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
-        const estudianteId = await AsyncStorage.getItem("estudianteId");
-        const userId = await AsyncStorage.getItem("userId");
-        const userEmail = await AsyncStorage.getItem("userEmail");
+        const [storedToken, storedUser] = await Promise.all([
+          AsyncStorage.getItem("token"),
+          AsyncStorage.getItem("user"),
+        ]);
 
-        if (token) {
-          setToken(token);
-          setIsAuthenticated(true);
-
-          if (userId && userEmail) {
-            setUser({
-              idUsuario: userId,
-              email: userEmail,
-              estudianteId: estudianteId || undefined,
-            });
-          }
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
         }
-      } catch (error) {
-        console.error("Error al cargar datos del almacenamiento:", error);
+      } catch (e) {
+        console.error("Error cargando sesión:", e);
       } finally {
         setLoading(false);
       }
     };
-    checkAuth();
+    loadStorageData();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
-      console.log(`📡 Intentando login en: ${API_BASE_URL}/api/web/auth/login`);
-
       const response = await fetch(`${API_BASE_URL}/api/web/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,39 +74,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }),
       });
 
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("El servidor no responde (Error de Red)");
+      }
+
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Credenciales inválidas");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Credenciales incorrectas");
-      }
+      const userData: User = {
+        id: String(data.usuario.id),
+        email: data.usuario.email,
+        rol: data.usuario.rol,
+        nombre: data.usuario.nombre,
+        estudianteId: data.usuario.datos?.idEstudiante
+          ? String(data.usuario.datos.idEstudiante)
+          : undefined,
+      };
 
-      await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("userId", String(data.usuario.id));
-      await AsyncStorage.setItem("userEmail", email);
-
-      if (data.usuario.rol === "ALUMNO" && data.usuario.datos) {
-        await AsyncStorage.setItem(
-          "estudianteId",
-          String(data.usuario.datos.idEstudiante),
-        );
-        setUser({
-          idUsuario: String(data.usuario.id),
-          email: email,
-          estudianteId: String(data.usuario.datos.idEstudiante),
-        });
-      } else {
-        setUser({
-          idUsuario: String(data.usuario.id),
-          email: email,
-        });
-      }
+      await Promise.all([
+        AsyncStorage.setItem("token", data.token),
+        AsyncStorage.setItem("user", JSON.stringify(userData)),
+      ]);
 
       setToken(data.token);
-      setIsAuthenticated(true);
+      setUser(userData);
       return true;
     } catch (err: any) {
-      console.error("Error de Login:", err.message);
-      setError(err.message || "Error al iniciar sesión");
+      setError(err.message);
       return false;
     } finally {
       setLoading(false);
@@ -123,16 +110,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {
     setLoading(true);
-    setError(null);
     try {
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("userId");
-      await AsyncStorage.removeItem("userEmail");
-      await AsyncStorage.removeItem("estudianteId");
-      setUser(null);
+      await AsyncStorage.multiRemove([
+        "token",
+        "user",
+        "estudianteId",
+        "userId",
+        "userEmail",
+      ]);
       setToken(null);
-      setIsAuthenticated(false);
-    } catch (error) {
+      setUser(null);
+      router.replace("/login");
+    } catch (e) {
       setError("Error al cerrar sesión");
     } finally {
       setLoading(false);
@@ -142,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
+        isAuthenticated: !!token,
         user,
         token,
         login,

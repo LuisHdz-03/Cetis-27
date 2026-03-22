@@ -1,296 +1,105 @@
 import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
-import type {
-  Asistencia,
-  EstadisticasGrupo,
-  TipoAsistencia,
-} from "@/types/database";
-import { useState } from "react";
-
-export type { Asistencia, EstadisticasGrupo, TipoAsistencia };
-
-export interface MateriaPickerOption {
-  label: string;
-  value: string;
-}
-
-export interface IconData {
-  name: "checkmark-circle" | "time-outline" | "close-circle" | "help-circle";
-  color: string;
-}
+import type { AsistenciaMovil, EstadisticasMateria } from "@/types/database";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useState } from "react";
 
 export const useAsistencias = () => {
-  const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
+  // Cambiamos los tipos para que coincidan con la respuesta simplificada del Back-end
+  const [asistencias, setAsistencias] = useState<AsistenciaMovil[]>([]);
   const [estadisticasGrupos, setEstadisticasGrupos] = useState<
-    EstadisticasGrupo[]
-  >([]);
-  const [gruposParaPicker, setGruposParaPicker] = useState<
-    MateriaPickerOption[]
+    EstadisticasMateria[]
   >([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchGruposParaPicker = async (estudianteId: string) => {
-    try {
-      const resInscripciones = await fetch(
-        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
-      );
-      if (!resInscripciones.ok)
-        throw new Error("Error al obtener inscripciones");
-      const inscripciones = await resInscripciones.json();
-      if (!inscripciones || inscripciones.length === 0) {
-        setGruposParaPicker([]);
-        return;
-      }
-
-      const grupoIds = inscripciones.map((i: any) => i.idGrupo);
-      const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
-      if (!resGrupos.ok) throw new Error("Error al obtener grupos");
-      const grupos = await resGrupos.json();
-      const resMaterias = await fetch(`${API_BASE_URL}/api/materias`);
-      if (!resMaterias.ok) throw new Error("Error al obtener materias");
-      const materias = await resMaterias.json();
-
-      const opciones: MateriaPickerOption[] = [];
-      for (const inscripcion of inscripciones) {
-        const grupo = grupos.find(
-          (g: any) => g.idGrupo === inscripcion.idGrupo,
-        );
-        if (!grupo) continue;
-        const materia = materias.find(
-          (m: any) => m.idMateria === grupo.idMateria,
-        );
-        if (!materia) continue;
-        const grupoCodigo =
-          grupo.codigo || grupo.code || grupo.clave || "Sin código";
-        opciones.push({
-          label: `${
-            materia.nombre || materia.name || "Materia"
-          } - Grupo ${grupoCodigo}`,
-          value: String(grupo.idGrupo),
-        });
-      }
-      setGruposParaPicker(opciones);
-    } catch (err) {
-      setError("Error al cargar los grupos");
-    }
-  };
-
-  const fetchEstadisticasGrupos = async (estudianteId: string) => {
-    setIsLoadingStats(true);
-    try {
-      const resInscripciones = await fetch(
-        `${API_BASE_URL}/api/inscripciones?estudianteId=${estudianteId}`,
-      );
-      if (!resInscripciones.ok)
-        throw new Error("Error al obtener inscripciones");
-      const inscripciones = await resInscripciones.json();
-
-      if (!inscripciones || inscripciones.length === 0) {
-        setEstadisticasGrupos([]);
-        setIsLoadingStats(false);
-        return;
-      }
-      const inscripcionesUnicas = inscripciones.reduce(
-        (acc: any[], current: any) => {
-          const existe = acc.find((i) => i.idGrupo === current.idGrupo);
-          if (!existe) {
-            acc.push(current);
-          } else {
-            const indexExistente = acc.findIndex(
-              (i) => i.idGrupo === current.idGrupo,
-            );
-            if (
-              new Date(current.fechaCreacion) > new Date(existe.fechaCreacion)
-            ) {
-              acc[indexExistente] = current;
-            }
-          }
-          return acc;
-        },
-        [],
-      );
-
-      const grupoIds = inscripcionesUnicas.map((i: any) => i.idGrupo);
-      const resGrupos = await fetch(`${API_BASE_URL}/api/grupos`);
-      if (!resGrupos.ok) throw new Error("Error al obtener grupos");
-      const grupos = await resGrupos.json();
-
-      const resMaterias = await fetch(`${API_BASE_URL}/api/materias`);
-      if (!resMaterias.ok) throw new Error("Error al obtener materias");
-      const materias = await resMaterias.json();
-
-      const resDocentes = await fetch(`${API_BASE_URL}/api/usuarios`);
-      if (!resDocentes.ok) throw new Error("Error al obtener docentes");
-      const docentes = await resDocentes.json();
-
-      const resAsistencias = await fetch(
-        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}`,
-      );
-      if (!resAsistencias.ok) throw new Error("Error al obtener asistencias");
-      const asistencias = await resAsistencias.json();
-
-      const estadisticas: EstadisticasGrupo[] = [];
-      for (const inscripcion of inscripcionesUnicas) {
-        const grupo = grupos.find(
-          (g: any) => g.idGrupo === inscripcion.idGrupo,
-        );
-        if (!grupo) continue;
-
-        const materia = materias.find(
-          (m: any) => m.idMateria === grupo.idMateria,
-        );
-        if (!materia) continue;
-        const grupoId = String(grupo.idGrupo);
-        const asistenciasGrupo = asistencias.filter(
-          (a: any) => a.idInscripcion === inscripcion.idInscripcion,
-        );
-        let totalAsistencias = 0;
-        let totalRetardos = 0;
-        let totalFaltas = 0;
-        asistenciasGrupo.forEach((a: any) => {
-          const tipo = (a.tipoAsistencia || "").toUpperCase();
-          if (tipo.includes("ASISTENCIA")) totalAsistencias++;
-          else if (tipo.includes("RETARDO")) totalRetardos++;
-          else if (tipo.includes("FALTA")) totalFaltas++;
-        });
-        const totalClases = totalAsistencias + totalRetardos + totalFaltas;
-        const porcentajeAsistencia =
-          totalClases > 0
-            ? Math.round(
-                ((totalAsistencias + totalRetardos) / totalClases) * 100,
-              )
-            : 0;
-        let nombreDocente = "Docente";
-        if (grupo.idDocente) {
-          const docente = docentes.find(
-            (d: any) => d.idUsuario === grupo.idDocente,
-          );
-          if (docente)
-            nombreDocente = `${docente.nombre || ""} ${
-              docente.apellidoPaterno || ""
-            } ${docente.apellidoMaterno || ""}`.trim();
-        }
-        estadisticas.push({
-          idGrupo: grupo.idGrupo,
-          idMateria: grupo.idMateria,
-          nombreMateria: materia.nombre || "Materia",
-          codigoMateria: materia.codigo || materia.clave || "N/A",
-          codigoGrupo: grupo.codigo || "Sin código",
-          semestre: Number(grupo.semestre) || 1,
-          aula: grupo.aula || "N/A",
-          nombreDocente,
-          totalClases,
-          totalAsistencias,
-          totalRetardos,
-          totalFaltas,
-          porcentajeAsistencia,
-          grupoIdString: grupoId,
-        });
-      }
-      setEstadisticasGrupos(estadisticas);
-    } catch (err) {
-      setError("Error al cargar estadísticas de grupos");
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
-
-  const fetchAsistenciasDetalladas = async (
-    grupoId: string,
-    estudianteId: string,
-  ) => {
+  const fetchDatosAsistencia = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/asistencias?estudianteId=${estudianteId}&grupoId=${grupoId}`,
-      );
-      if (!res.ok) throw new Error("Error al obtener asistencias");
-      const asistencias = await res.json();
-      const asistenciasData: Asistencia[] = asistencias
-        .map((a: any): Asistencia => {
-          return {
-            id: a.idAsistencia ?? a.id ?? 0,
-            idInscripcion: a.idInscripcion ?? 0,
-            idDocente: a.idDocente ?? 0,
-            fecha: a.fecha ?? "",
-            horaRegistro: a.horaRegistro ?? a.hora ?? "",
-            tipoAsistencia: a.estado ?? a.tipoAsistencia ?? "Falta",
-            observaciones: a.observaciones ?? "",
-            fechaRegistroAsistencia:
-              a.fechaRegistro ?? a.fechaRegistroAsistencia ?? "",
-          };
-        })
-        .sort((a: Asistencia, b: Asistencia) => {
-          return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
-        });
-      setAsistencias(asistenciasData);
+      const token = await AsyncStorage.getItem("token");
+      if (!token) throw new Error("Sesión expirada");
+
+      const res = await fetch(`${API_BASE_URL}/api/movil/asistencias`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Error al obtener datos");
+
+      const data: AsistenciaMovil[] = await res.json();
+
+      // Guardamos la lista completa para el historial
+      setAsistencias(data);
+
+      // Generamos las estadísticas basadas en la materia y el estatus
+      const stats = procesarEstadisticas(data);
+      setEstadisticasGrupos(stats);
     } catch (err) {
-      setError("Error al cargar las asistencias");
-      setAsistencias([]);
+      console.error("Error useAsistencias:", err);
+      setError("No se pudieron cargar las asistencias");
     } finally {
       setIsLoading(false);
     }
-  };
-  const getIconForTipo = (tipo: string): IconData => {
-    switch (tipo.toLowerCase()) {
-      case "asistencia":
-        return {
-          name: "checkmark-circle" as const,
-          color: colors.verdeAsistencia,
-        };
-      case "retardo":
-        return {
-          name: "time-outline" as const,
-          color: colors.naranjaRetardos,
-        };
-      case "falta":
-        return {
-          name: "close-circle" as const,
-          color: colors.rojoFaltas,
-        };
-      default:
-        return {
-          name: "help-circle" as const,
-          color: colors.gray[400],
-        };
-    }
+  }, []);
+
+  // Función interna para resumir los datos recibidos (Ahora usa materia y estatus)
+  const procesarEstadisticas = (
+    lista: AsistenciaMovil[],
+  ): EstadisticasMateria[] => {
+    const mapa = new Map<string, EstadisticasMateria>();
+
+    lista.forEach((a) => {
+      const nombreMateria = a.materia || "Materia desconocida";
+
+      if (!mapa.has(nombreMateria)) {
+        mapa.set(nombreMateria, {
+          nombreMateria,
+          total: 0,
+          asistencias: 0,
+          faltas: 0,
+          retardos: 0,
+          porcentajeAsistencia: 0,
+        });
+      }
+
+      const item = mapa.get(nombreMateria)!;
+      item.total++;
+
+      // Comparamos contra 'estatus' que es lo que manda el back
+      const estatus = a.estatus.toLowerCase();
+      if (estatus.includes("asistencia")) item.asistencias++;
+      else if (estatus.includes("falta")) item.faltas++;
+      else if (estatus.includes("retardo")) item.retardos++;
+    });
+
+    return Array.from(mapa.values()).map((m) => ({
+      ...m,
+      // Cálculo: (Asistencias + Retardos) / Total
+      porcentajeAsistencia:
+        m.total > 0
+          ? Math.round(((m.asistencias + m.retardos) / m.total) * 100)
+          : 0,
+    }));
   };
 
-  const getMonthYearString = () => {
-    const meses = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
-    ];
-    const fecha = new Date();
-    const mes = meses[fecha.getMonth()];
-    const año = fecha.getFullYear();
-    return `${mes} ${año}`;
+  const getIconForTipo = (tipo: string) => {
+    const t = tipo.toLowerCase();
+    if (t.includes("asistencia"))
+      return {
+        name: "checkmark-circle" as const,
+        color: colors.verdeAsistencia,
+      };
+    if (t.includes("retardo"))
+      return { name: "time-outline" as const, color: colors.naranjaRetardos };
+    return { name: "close-circle" as const, color: colors.rojoFaltas };
   };
 
   return {
     asistencias,
     estadisticasGrupos,
-    gruposParaPicker,
     isLoading,
-    isLoadingStats,
     error,
-    fetchGruposParaPicker,
-    fetchEstadisticasGrupos,
-    fetchAsistenciasDetalladas,
+    fetchDatosAsistencia,
     getIconForTipo,
-    getMonthYearString,
   };
 };

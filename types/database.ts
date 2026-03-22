@@ -1,192 +1,113 @@
+// --- MODELOS BASE (Reflejo de la Base de Datos) ---
+
+export type RolUsuario = "ADMIN" | "DOCENTE" | "ALUMNO";
+
 export interface Usuario {
   idUsuario: number;
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
   email: string;
-  telefono: string;
-  fechaNacimiento: string;
-  direccion: string;
-  tipoUsuario: "estudiante" | "admon" | "docente";
-  activo: boolean;
-  fechaRegistro: string;
-}
-
-export interface Estudiante {
-  id: number;
-  idUsuario: number;
-  idEspecialidad: number;
-  numeroControl: string;
   curp: string;
-  semestreActual: number;
-  codigoQr: string;
-  fechaIngreso: string;
-
-  usuario?: Usuario;
-  especialidad?: Especialidad;
-}
-
-export interface Docente {
-  id: number;
-  idUsuario: number;
-  idEspecialidad: number;
-  numeroEmpleado: string;
-  usuario?: Usuario;
-  especialidad?: Especialidad;
-}
-
-export interface Tutor {
-  id: number;
-  idEstudiante: number;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
-  telefono: string;
-  email: string;
-  parentesco: string;
+  telefono?: string;
+  direccion?: string;
+  rol: RolUsuario;
   activo: boolean;
-  estudiante?: Estudiante;
+  fotoUrl?: string; // Centralizado aquí o en Estudiante
 }
 
 export interface Especialidad {
-  id: number;
-  nombre: string;
-  codigo: string;
-  activo: boolean;
-}
-
-export interface Materia {
-  id: number;
   idEspecialidad: number;
   nombre: string;
-  codigo: string;
-  semestre: number;
-  horas: number;
-  activo: boolean;
-  especialidad?: Especialidad;
-}
-
-export interface Periodo {
-  id: number;
-  codigo: string;
-  semestre: string;
-  fechaInicio: string;
-  fechaFin: string;
-  activo: boolean;
+  codigo?: string;
 }
 
 export interface Grupo {
-  id: number;
-  idMateria: number;
-  idDocente: number;
-  idPeriodo: number;
-  idEspecialidad: number;
-  codigo: string;
-  semestre: number;
-  aula: string;
-  activo: boolean;
-  materia?: Materia;
-  docente?: Docente;
-  periodo?: Periodo;
+  idGrupo: number;
+  nombre: string; // Ej: "A", "B"
+  grado: number; // Ej: 1, 3, 5
+  turno: "MATUTINO" | "VESPERTINO";
   especialidad?: Especialidad;
 }
 
-export interface Inscripcion {
-  id: number;
+export interface Estudiante {
   idEstudiante: number;
-  idGrupo: number;
-  fechaInscripcion: string;
-  estudiante?: Estudiante;
+  matricula: string;
+  usuarioId: number;
+  grupoId?: number;
+  semestre: number;
+  credencialFechaEmision?: string;
+  credencialFechaExpiracion?: string;
+  usuario?: Usuario;
   grupo?: Grupo;
 }
-export type TipoAsistencia = "Asistencia" | "Retardo" | "Falta";
 
-export interface Asistencia {
-  id: number;
-  idInscripcion: number;
-  idDocente: number;
-  fecha: string;
-  horaRegistro: string;
-  tipoAsistencia: TipoAsistencia;
-  observaciones: string;
-  fechaRegistroAsistencia: string;
-  inscripcion?: Inscripcion;
-  docente?: Docente;
+export interface Tutor {
+  idTutor: number;
+  nombre: string;
+  apellidoPaterno: string;
+  apellidoMaterno?: string;
+  telefono: string;
+  parentesco: string;
+  email?: string;
+  direccion?: string;
 }
 
-export type TipoReporte = "falta_tarea" | "conducta" | "otra";
-export type EstatusReporte = "Pendiente" | "revisado" | "resuelto";
-export type GravedadReporte = "ALTA" | "MEDIA" | "BAJA";
-
-export interface Reporte {
-  id: number;
-  idEstudiante: number;
-  idGrupo: number;
-  idDocente: number;
-  tipo: TipoReporte;
-  titulo: string;
-  descripcion: string;
-  fechaReporte: string;
-  gravedad: GravedadReporte;
-  estatus: EstatusReporte;
-  accionTomada: string | null;
-  fechaCreacion: string;
-  fechaRevision: string | null;
-  lugarEncontraba: string | null;
-  leClasesReportado: string | null;
-  nombreFirmaAlumno: string | null;
-  nombreFirmaMaestro: string | null;
-  nombreTutor: string | null;
-  nombrePapaMamaTutor: string | null;
-  telefono: string | null;
-  estudiante?: Estudiante;
-  grupo?: Grupo;
-  docente?: Docente;
-}
+// --- INTERFACES PARA LA APP MÓVIL (Datos combinados) ---
 
 export interface EstudianteCompleto {
-  idUsuario: number;
+  idUsuario: string;
   foto: string | null;
-
   numeroControl: string;
   nombreCompleto: string;
   especialidad: string;
-  codigoEspecialidad: string;
   semestre: number;
   email: string;
-  telefono: string;
-  codigoQr: string;
-  fechaIngreso: string;
   curp: string;
-}
-
-export interface DocenteCompleto {
-  numeroEmpleado: string;
-  nombreCompleto: string;
-  especialidad: string;
-  email: string;
   telefono: string;
+  direccion: string;
+  // Info de grupo
+  grupoNombre: string;
+  turno: string;
+  // Info de tutor opcional
+  tutor?: {
+    nombre: string;
+    telefono: string;
+    parentesco: string;
+  } | null;
 }
 
-export interface EstadisticasGrupo {
-  idGrupo: number;
-  idMateria: number;
+// Interfaz exacta para lo que devuelve el controlador 'getCredencial'
+export interface DatosCredencial {
+  nombreCompleto: string;
+  curp: string;
+  noControl: string;
+  especialidad: string;
+  turno: string;
+  emision: string; // Ya formateada: "marzo 2026"
+  vigencia: string; // Ya formateada: "marzo 2029"
+  qrImage: string; // String en Base64 (data:image/png;base64...)
+}
+
+// Interfaz para el historial de asistencias "masticado" por el back
+export interface AsistenciaMovil {
+  fecha: string;
+  estatus: string;
+  materia: string;
+  docente: string;
+}
+
+export interface AccesoMovil {
+  idAccesos: number;
+  fechaHora: string;
+  tipo: string; // "ENTRADA" | "SALIDA"
+}
+
+export interface EstadisticasMateria {
   nombreMateria: string;
-  codigoMateria: string;
-  codigoGrupo: string;
-  semestre: number;
-  aula: string;
-  nombreDocente: string;
-  totalClases: number;
-  totalAsistencias: number;
-  totalRetardos: number;
-  totalFaltas: number;
+  total: number;
+  asistencias: number;
+  faltas: number;
+  retardos: number;
   porcentajeAsistencia: number;
-  grupoIdString?: string;
-}
-
-export interface ReporteDetallado extends Reporte {
-  nombreEstudiante: string;
-  nombreDocente: string;
-  nombreMateria: string;
-  codigoGrupo: string;
 }
