@@ -5,11 +5,10 @@ import {
   styles,
 } from "@/constants/asistenciaStyles";
 import { colors } from "@/constants/colors";
-import { useAuth } from "@/contexts/AuthContext";
 import { useAsistencias } from "@/hooks/useAsistencias";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -22,12 +21,8 @@ import {
 import RNPickerSelect from "react-native-picker-select";
 
 export default function AsistenciasScreen() {
-  // Obtener el estudianteId del contexto de autenticación
-  const { user } = useAuth();
-  const estudianteId = user?.estudianteId;
-
   // Estados locales para UI
-  const [selectPicker, setSelectPicker] = useState(null);
+  const [selectPicker, setSelectPicker] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMateria, setSelectedMateria] = useState<string | null>(null);
 
@@ -35,77 +30,56 @@ export default function AsistenciasScreen() {
   const [mesFiltro, setMesFiltro] = useState("");
   const [anioFiltro, setAnioFiltro] = useState("");
 
+  // Usamos solo lo que el nuevo hook simplificado nos da
   const {
     asistencias,
     estadisticasGrupos,
-    gruposParaPicker,
     isLoading,
-    isLoadingStats,
     error,
-    fetchGruposParaPicker,
-    fetchEstadisticasGrupos,
-    fetchAsistenciasDetalladas,
-    getMonthYearString,
+    fetchDatosAsistencia,
   } = useAsistencias();
 
-  // Cargar grupos y estadísticas cuando estudianteId esté disponible
-  useEffect(() => {
-    if (estudianteId) {
-      fetchGruposParaPicker(estudianteId);
-      fetchEstadisticasGrupos(estudianteId);
-    }
-  }, [estudianteId]);
-
-  // Recargar datos cuando la pantalla vuelve al foco
+  // Cargamos los datos al entrar o enfocar la pantalla
   useFocusEffect(
     useCallback(() => {
-      if (estudianteId) {
-        fetchEstadisticasGrupos(estudianteId);
-      }
-    }, [estudianteId]),
+      fetchDatosAsistencia();
+    }, []),
   );
 
-  // Cargar datos cuando se abre el modal
-  useEffect(() => {
-    if (modalVisible && selectedMateria && estudianteId) {
-      fetchAsistenciasDetalladas(selectedMateria, estudianteId);
-    }
-  }, [modalVisible, selectedMateria, estudianteId]);
+  // Generamos las opciones del Picker dinámicamente desde las estadísticas
+  const opcionesMaterias = useMemo(() => {
+    return estadisticasGrupos.map((est) => ({
+      label: est.nombreMateria,
+      value: est.nombreMateria,
+    }));
+  }, [estadisticasGrupos]);
 
-  const openModal = (materiaId: string) => {
-    setSelectedMateria(materiaId);
+  const openModal = (materiaNombre: string) => {
+    setSelectedMateria(materiaNombre);
     setModalVisible(true);
   };
 
-  const gruposFiltrados = estadisticasGrupos.filter((grupo: any) => {
-    if (selectPicker && grupo.grupoIdString !== selectPicker) {
-      return false;
-    }
+  // Filtramos las tarjetas según el Picker
+  const gruposFiltrados = estadisticasGrupos.filter((grupo) => {
+    if (selectPicker && grupo.nombreMateria !== selectPicker) return false;
     return true;
   });
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.primary }}>
       <ScrollView style={styles.container}>
         <View style={styles.content}>
-          {/* Card de filtros */}
           <View style={styles.filterCard}>
-            {/* Título */}
             <Text style={styles.title}>Asistencias</Text>
-
-            {/* Línea separadora */}
             <View style={styles.divider} />
 
-            {/* Picker de materias */}
             <View style={styles.pickerTouchable}>
               <RNPickerSelect
-                placeholder={{
-                  label: "Selecciona una materia",
-                  value: null,
-                }}
+                placeholder={{ label: "Todas las materias", value: null }}
                 value={selectPicker}
                 onValueChange={(value) => setSelectPicker(value)}
-                items={gruposParaPicker} //  Datos dinámicos del backend
+                // SOLUCIÓN AL ERROR: Aseguramos que siempre sea un array
+                items={opcionesMaterias}
                 style={{
                   inputIOS: styles.pickerInput,
                   inputAndroid: styles.pickerInput,
@@ -124,11 +98,10 @@ export default function AsistenciasScreen() {
               />
             </View>
 
-            {/* Tres cajas de texto */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Dia"
+                placeholder="Día"
                 placeholderTextColor={colors.gray[400]}
                 keyboardType="numeric"
                 maxLength={2}
@@ -146,7 +119,7 @@ export default function AsistenciasScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="año"
+                placeholder="Año"
                 placeholderTextColor={colors.gray[400]}
                 keyboardType="numeric"
                 maxLength={4}
@@ -156,15 +129,16 @@ export default function AsistenciasScreen() {
             </View>
           </View>
 
-          {/* Cards dinámicas de materias */}
-          {isLoadingStats ? (
+          {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Cargando materias...</Text>
+              <ActivityIndicator size="large" color={colors.white} />
+              <Text style={[styles.loadingText, { color: "white" }]}>
+                Cargando asistencias...
+              </Text>
             </View>
           ) : (
             <>
-              {gruposFiltrados.map((grupo: any, index) => (
+              {gruposFiltrados.map((grupo, index) => (
                 <View key={index} style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Ionicons
@@ -172,12 +146,10 @@ export default function AsistenciasScreen() {
                       size={iconSizes.header}
                       color={colors.primary}
                     />
-                    <Text style={styles.cardTitle}>
-                      {grupo.nombreMateria} - Grupo {grupo.codigoGrupo}
-                    </Text>
+                    <Text style={styles.cardTitle}>{grupo.nombreMateria}</Text>
                     <TouchableOpacity
                       style={styles.detailsButton}
-                      onPress={() => openModal(grupo.grupoIdString)}
+                      onPress={() => openModal(grupo.nombreMateria)}
                     >
                       <Text style={styles.detailsButtonText}>detalles</Text>
                       <Ionicons
@@ -189,69 +161,81 @@ export default function AsistenciasScreen() {
                   </View>
 
                   <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={iconSizes.stat}
-                        color={colors.verdeAsistencia}
-                      />
-                      <Text style={styles.statLabel}>Asistencias</Text>
-                      <Text style={styles.statValue}>
-                        {grupo.totalAsistencias}
-                      </Text>
-                    </View>
-
+                    <StatItem
+                      icon="checkmark-circle"
+                      color={colors.verdeAsistencia}
+                      label="Asistencias"
+                      value={grupo.asistencias}
+                    />
                     <View style={styles.statDivider} />
-
-                    <View style={styles.statItem}>
-                      <Ionicons
-                        name="time-outline"
-                        size={iconSizes.stat}
-                        color={colors.naranjaRetardos}
-                      />
-                      <Text style={styles.statLabel}>Retardos</Text>
-                      <Text style={styles.statValue}>
-                        {grupo.totalRetardos}
-                      </Text>
-                    </View>
-
+                    <StatItem
+                      icon="time-outline"
+                      color={colors.naranjaRetardos}
+                      label="Retardos"
+                      value={grupo.retardos}
+                    />
                     <View style={styles.statDivider} />
+                    <StatItem
+                      icon="close-circle"
+                      color={colors.rojoFaltas}
+                      label="Faltas"
+                      value={grupo.faltas}
+                    />
+                  </View>
 
-                    <View style={styles.statItem}>
-                      <Ionicons
-                        name="close-circle"
-                        size={iconSizes.stat}
-                        color={colors.rojoFaltas}
-                      />
-                      <Text style={styles.statLabel}>Faltas</Text>
-                      <Text style={styles.statValue}>{grupo.totalFaltas}</Text>
-                    </View>
+                  <View style={{ marginTop: 10, alignItems: "center" }}>
+                    <Text style={{ fontSize: 12, color: colors.gray[600] }}>
+                      Porcentaje: {grupo.porcentajeAsistencia}%
+                    </Text>
                   </View>
                 </View>
               ))}
-              {!isLoadingStats && gruposFiltrados.length === 0 && (
-                <View style={{ alignItems: "center", marginTop: 20 }}>
-                  <Text style={{ color: colors.gray[50] }}>
-                    No se encontró la materia seleccionada.
-                  </Text>
-                </View>
-              )}
             </>
           )}
 
-          {/* Modal de detalles */}
           <AsistenciasModal
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
-            asistenciasDetalladas={asistencias}
+            // Filtramos las asistencias detalladas para que el modal solo muestre las de esa materia
+            asistenciasDetalladas={asistencias.filter(
+              (a) => a.materia === selectedMateria,
+            )}
             estadisticasMaterias={estadisticasGrupos}
             selectedMateria={selectedMateria}
             isLoading={isLoading}
             error={error}
-            getMonthYearString={getMonthYearString}
+            getMonthYearString={() => {
+              const now = new Date();
+              const meses = [
+                "Enero",
+                "Febrero",
+                "Marzo",
+                "Abril",
+                "Mayo",
+                "Junio",
+                "Julio",
+                "Agosto",
+                "Septiembre",
+                "Octubre",
+                "Noviembre",
+                "Diciembre",
+              ];
+              return `${meses[now.getMonth()]} ${now.getFullYear()}`;
+            }}
           />
         </View>
       </ScrollView>
-    </>
+    </View>
+  );
+}
+
+// Componente pequeño para los items de estadísticas
+function StatItem({ icon, color, label, value }: any) {
+  return (
+    <View style={styles.statItem}>
+      <Ionicons name={icon} size={iconSizes.stat} color={color} />
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
   );
 }

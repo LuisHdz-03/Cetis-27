@@ -187,26 +187,17 @@ export default function ReportesScreen() {
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Fecha:</Text>
                         <Text style={styles.detailValue}>
-                          {new Date(reporte.fechaReporte).toLocaleDateString(
-                            "es-MX",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )}
+                          {new Date(reporte.fecha).toLocaleDateString("es-MX", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                         </Text>
                       </View>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Reportado por:</Text>
                         <Text style={styles.detailValue}>
-                          {reporte.nombreFirmaMaestro || "No especificado"}
-                        </Text>
-                      </View>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Materia:</Text>
-                        <Text style={styles.detailValue}>
-                          {reporte.leClasesReportado} - Grupo {reporte.idGrupo}
+                          {reporte.docente || "No especificado"}
                         </Text>
                       </View>
                     </View>
@@ -224,7 +215,7 @@ export default function ReportesScreen() {
                     </View>
 
                     {/* Acciones tomadas (si existen) */}
-                    {reporte.accionTomada && (
+                    {reporte.acciones && (
                       <View style={styles.descripcionContainer}>
                         <View style={styles.orangeBorder} />
                         <View style={styles.descripcionContent}>
@@ -232,7 +223,7 @@ export default function ReportesScreen() {
                             Acciones Tomadas:
                           </Text>
                           <Text style={styles.descripcionText}>
-                            {reporte.accionTomada}
+                            {reporte.acciones}
                           </Text>
                         </View>
                       </View>

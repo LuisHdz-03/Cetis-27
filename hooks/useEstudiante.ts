@@ -34,34 +34,32 @@ export function useEstudiante() {
 
       const data = await res.json();
 
-      // Mapeo directo desde el objeto 'estudiante' que devuelve tu backend
+      // El backend devuelve el estudiante con usuario, tutor y grupo anidados
       const estudianteFormateado: EstudianteCompleto = {
-        idUsuario: String(data.usuarioId),
-        // IMPORTANTE: Concatenamos la URL del servidor para la imagen
+        idUsuario: String(data.usuarioId || data.idEstudiante || ""),
         foto: data.fotoUrl ? `${API_BASE_URL}${data.fotoUrl}` : null,
 
         numeroControl: data.matricula || "Sin matrícula",
-        nombreCompleto: `${data.usuario?.nombre} ${data.usuario?.apellidoPaterno} ${data.usuario?.apellidoMaterno}`,
+        nombreCompleto:
+          `${data.usuario?.nombre || ""} ${data.usuario?.apellidoPaterno || ""} ${data.usuario?.apellidoMaterno || ""}`.trim(),
 
-        especialidad:
-          data.grupo?.especialidad?.nombre || "Sin especialidad asignada",
-        semestre: data.semestre || 1,
+        especialidad: data.grupo?.especialidad?.nombre || "Sin especialidad",
+        semestre: data.semestre || data.grado || 1,
 
         email: data.usuario?.email || "",
-        telefono: data.usuario?.telefono || "Sin teléfono",
-        direccion: data.usuario?.direccion || "Sin dirección",
-        curp: data.usuario?.curp || "Sin CURP",
+        telefono: data.usuario?.telefono || "",
+        direccion: data.usuario?.direccion || "",
+        curp: data.curp || "",
 
-        // Info del Grupo
         grupoNombre: data.grupo?.nombre || "N/A",
         turno: data.grupo?.turno || "N/A",
 
-        // Info del Tutor (si existe)
         tutor: data.tutor
           ? {
-              nombre: `${data.tutor.nombre} ${data.tutor.apellidoPaterno}`,
-              telefono: data.tutor.telefono,
-              parentesco: data.tutor.parentesco,
+              nombre:
+                `${data.tutor.nombre} ${data.tutor.apellidoPaterno || ""}`.trim(),
+              telefono: data.tutor.telefono || "",
+              parentesco: data.tutor.parentesco || "Tutor",
             }
           : null,
       };

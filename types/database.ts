@@ -84,6 +84,7 @@ export interface DatosCredencial {
   noControl: string;
   especialidad: string;
   turno: string;
+  grupo: string;
   emision: string; // Ya formateada: "marzo 2026"
   vigencia: string; // Ya formateada: "marzo 2029"
   qrImage: string; // String en Base64 (data:image/png;base64...)
@@ -110,4 +111,21 @@ export interface EstadisticasMateria {
   faltas: number;
   retardos: number;
   porcentajeAsistencia: number;
+}
+
+// --- TIPOS PARA REPORTES (Incidencias) ---
+
+export type EstatusReporte = "PENDIENTE" | "REVISADO" | "RESUELTO";
+export type GravedadReporte = "ALTA" | "MEDIA" | "BAJA";
+
+export interface ReporteDetallado {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  tipo: string; // Ej: "Conducta", "Académico"
+  gravedad: GravedadReporte;
+  estatus: EstatusReporte;
+  fecha: string; // Fecha en formato ISO
+  acciones?: string; // Acciones tomadas por el plantel
+  docente: string; // Nombre del docente que reportó
 }

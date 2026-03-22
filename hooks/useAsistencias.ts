@@ -5,7 +5,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useState } from "react";
 
 export const useAsistencias = () => {
-  // Cambiamos los tipos para que coincidan con la respuesta simplificada del Back-end
   const [asistencias, setAsistencias] = useState<AsistenciaMovil[]>([]);
   const [estadisticasGrupos, setEstadisticasGrupos] = useState<
     EstadisticasMateria[]
@@ -20,7 +19,7 @@ export const useAsistencias = () => {
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("Sesión expirada");
 
-      const res = await fetch(`${API_BASE_URL}/api/movil/asistencias`, {
+      const res = await fetch(`${API_BASE_URL}/api/movil/asistencia`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

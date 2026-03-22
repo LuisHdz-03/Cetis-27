@@ -1,10 +1,8 @@
 import { colors } from "@/constants/colors";
 import { styles } from "@/constants/credencialStyles";
-import { useEstudiante } from "@/hooks/useEstudiante";
-import { usePeriodo } from "@/hooks/usePeriodo";
+import { DatosCredencial } from "@/types/database";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-
 import {
   Image,
   Modal,
@@ -14,24 +12,10 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import QRCode from "react-native-qrcode-svg";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 
-interface EstudianteData {
-  nombreCompleto: string;
-  especialidad: string;
-  semestre: number;
-  numeroControl: string;
-  email: string;
-  telefono: string;
-  fechaIngreso: string;
-  codigoQr: string;
-  curp: string;
-  foto: string | null;
-}
-
 interface CredencialCardProps {
-  estudiante: EstudianteData;
+  estudiante: DatosCredencial;
   onFlip: () => void;
   frontAnimatedStyle: AnimatedStyle<ViewStyle>;
   backAnimatedStyle: AnimatedStyle<ViewStyle>;
@@ -45,15 +29,15 @@ export function CredencialCard({
   backAnimatedStyle,
   showBack,
 }: CredencialCardProps) {
-  const { qrData } = useEstudiante();
-  const { periodo } = usePeriodo();
   const [qrModalVisible, setQrModalVisible] = useState(false);
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
       onPress={onFlip}
       style={styles.cardContainer}
     >
+      {/* --- CARA FRONTAL --- */}
       <Animated.View
         style={[styles.card, styles.cardFront, frontAnimatedStyle]}
       >
@@ -71,21 +55,11 @@ export function CredencialCard({
           <View style={styles.mainContentFront}>
             <View style={styles.fotoNoControl}>
               <View style={[styles.avatarContainer, { overflow: "hidden" }]}>
-                {estudiante.foto ? (
-                  <Image
-                    source={{ uri: estudiante.foto }}
-                    style={{ width: "100%", height: "100%" }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Ionicons name="person" size={80} color={colors.primary} />
-                )}
+                {/* Nota: Si el back-end llegara a enviar la foto, aquí se pondría */}
+                <Ionicons name="person" size={80} color={colors.primary} />
               </View>
-
               <Text style={styles.labelNControl}>NO. DE CONTROL</Text>
-              <Text style={styles.numeroControl}>
-                {estudiante.numeroControl}
-              </Text>
+              <Text style={styles.numeroControl}>{estudiante.noControl}</Text>
             </View>
 
             <View style={styles.infoContainerFront}>
@@ -97,11 +71,14 @@ export function CredencialCard({
                 {estudiante.nombreCompleto}
               </Text>
               <Text style={styles.curp}>CURP</Text>
-              <Text style={styles.curpValue}>{estudiante.curp}</Text>
+              <Text style={styles.curpValue}>
+                {estudiante.curp || "Sin CURP"}
+              </Text>
+              <Text style={styles.curp}>GRUPO</Text>
+              <Text style={styles.curpValue}>{estudiante.grupo || "N/A"}</Text>
             </View>
           </View>
         </View>
-
         <View style={styles.barraEspe}>
           <View style={styles.textoR}>
             <Text style={styles.textoCheuco}>
@@ -111,6 +88,7 @@ export function CredencialCard({
         </View>
       </Animated.View>
 
+      {/* --- CARA TRASERA --- */}
       <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
         <View style={styles.barraTurno}>
           <View style={styles.turnosYfechas}>
@@ -119,20 +97,22 @@ export function CredencialCard({
                 SISTEMA ESCOLARIZADO
               </Text>
               <Text style={[styles.textoTurno, styles.margenesTexto2]}>
-                TURNO MATUTINO
+                TURNO {estudiante.turno}
+              </Text>
+              <Text style={[styles.textoTurno, styles.margenesTexto2]}>
+                GRUPO {estudiante.grupo || "N/A"}
               </Text>
             </View>
 
-            {periodo && (
-              <View style={styles.soloFechas}>
-                <Text style={styles.textFechas}>FECHA DE EMISIÓN:</Text>
-                <Text style={styles.fechas}>{periodo.fechaEmision}</Text>
-                <Text style={styles.textFechas}>VIGENCIA:</Text>
-                <Text style={styles.fechas}>{periodo.vigencia}</Text>
-              </View>
-            )}
+            <View style={styles.soloFechas}>
+              <Text style={styles.textFechas}>FECHA DE EMISIÓN:</Text>
+              <Text style={styles.fechas}>{estudiante.emision}</Text>
+              <Text style={styles.textFechas}>VIGENCIA:</Text>
+              <Text style={styles.fechas}>{estudiante.vigencia}</Text>
+            </View>
           </View>
         </View>
+
         <View style={styles.stQrFt}>
           <TouchableOpacity
             style={styles.qr}
@@ -145,20 +125,16 @@ export function CredencialCard({
             activeOpacity={showBack ? 0.7 : 1}
             disabled={!showBack}
           >
-            {qrData ? (
-              <QRCode
-                value={qrData}
-                size={70}
-                color={colors.primary}
-                backgroundColor={colors.white}
+            {estudiante.qrImage ? (
+              <Image
+                source={{ uri: estudiante.qrImage }}
+                style={{ width: 70, height: 70 }}
               />
             ) : (
               <Text style={styles.textoQR}>Sin QR</Text>
             )}
           </TouchableOpacity>
-
           <View style={styles.divisor} />
-
           <View>
             <Image
               source={require("@/assets/images/DGETI.png")}
@@ -166,11 +142,15 @@ export function CredencialCard({
             />
           </View>
         </View>
+
+        {/* --- SECCIÓN DIRECTOR (Restaurada) --- */}
         <View style={styles.cajaBox}>
           <Text style={styles.textoDirePlante}>DIRECTOR DEL PLANTEL</Text>
           <Text style={styles.textosCesarCastro}>CESAR CASTRO GARCIA</Text>
         </View>
         <View style={styles.nuevoDivisor} />
+
+        {/* --- SECCIÓN DIRECCIÓN (Restaurada) --- */}
         <View style={styles.stDirecciones}>
           <Text style={styles.labelDireccion}>DIRECCION DEL PLANTEL</Text>
           <Text style={styles.labelDosDirecc}>
@@ -180,28 +160,18 @@ export function CredencialCard({
         </View>
       </Animated.View>
 
-      <Modal
-        visible={qrModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setQrModalVisible(false)}
-      >
+      {/* --- MODAL DEL QR AMPLIADO --- */}
+      <Modal visible={qrModalVisible} transparent={true} animationType="fade">
         <Pressable
           style={styles.qrModalOverlay}
           onPress={() => setQrModalVisible(false)}
         >
           <View style={styles.qrModalContent}>
-            {qrData ? (
-              <View style={styles.qrModalQrContainer}>
-                <QRCode
-                  value={qrData}
-                  size={250}
-                  color={colors.primary}
-                  backgroundColor={colors.white}
-                />
-              </View>
-            ) : (
-              <Text style={styles.textoQR}>Sin QR</Text>
+            {estudiante.qrImage && (
+              <Image
+                source={{ uri: estudiante.qrImage }}
+                style={{ width: 250, height: 250 }}
+              />
             )}
             <TouchableOpacity
               style={styles.qrModalCloseButton}

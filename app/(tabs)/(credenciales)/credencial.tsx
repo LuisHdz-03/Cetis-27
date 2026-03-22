@@ -5,13 +5,13 @@ import {
 } from "@/components/credencial/CredencialStates";
 import { styles } from "@/constants/credencialStyles";
 import { useCredencial } from "@/hooks/useCredencial";
-import { useEstudiante } from "@/hooks/useEstudiante";
+import { useDatosCredencial } from "@/hooks/useDatosCredencial";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { View } from "react-native";
 
 export default function CredencialScreen() {
-  const { estudiante, isLoading, error, refreshData } = useEstudiante();
+  const { credencial, isLoading, error, refreshData } = useDatosCredencial();
 
   useFocusEffect(
     useCallback(() => {
@@ -26,7 +26,7 @@ export default function CredencialScreen() {
     return <LoadingState />;
   }
 
-  if (error || !estudiante) {
+  if (error || !credencial) {
     return (
       <ErrorState
         error={error || "No se pudieron cargar los datos"}
@@ -35,10 +35,18 @@ export default function CredencialScreen() {
     );
   }
 
+  // Debug: Verificar qué datos tiene la credencial
+  console.log("Credencial en componente:", {
+    curp: credencial.curp,
+    grupo: credencial.grupo,
+    turno: credencial.turno,
+    todosLosDatos: credencial,
+  });
+
   return (
     <View style={styles.container}>
       <CredencialCard
-        estudiante={estudiante}
+        estudiante={credencial}
         onFlip={handleFlip}
         frontAnimatedStyle={frontAnimatedStyle}
         backAnimatedStyle={backAnimatedStyle}
