@@ -88,6 +88,7 @@ export interface DatosCredencial {
   emision: string; // Ya formateada: "marzo 2026"
   vigencia: string; // Ya formateada: "marzo 2029"
   qrImage: string; // String en Base64 (data:image/png;base64...)
+  foto?: string; // URL de la foto de perfil (opcional)
 }
 
 // Interfaz para el historial de asistencias "masticado" por el back

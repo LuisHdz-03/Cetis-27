@@ -23,10 +23,12 @@ export function useDatosCredencial() {
 
       const data = await res.json();
 
-      // Debug: ver qué datos llegan
-      console.log("Datos credencial recibidos:", data);
+      if (data.fotoUrl) {
+        data.foto = data.fotoUrl.startsWith("http")
+          ? data.fotoUrl
+          : `${API_BASE_URL}${data.fotoUrl}`;
+      }
 
-      // El backend ya devuelve el formato correcto
       setCredencial(data);
     } catch (err: any) {
       setError(err.message || "Error al cargar la credencial");

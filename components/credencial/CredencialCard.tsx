@@ -31,6 +31,8 @@ export function CredencialCard({
 }: CredencialCardProps) {
   const [qrModalVisible, setQrModalVisible] = useState(false);
 
+  console.log("[CREDENCIAL CARD] Foto recibida:", estudiante.foto);
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -55,8 +57,14 @@ export function CredencialCard({
           <View style={styles.mainContentFront}>
             <View style={styles.fotoNoControl}>
               <View style={[styles.avatarContainer, { overflow: "hidden" }]}>
-                {/* Nota: Si el back-end llegara a enviar la foto, aquí se pondría */}
-                <Ionicons name="person" size={80} color={colors.primary} />
+                {estudiante.foto ? (
+                  <Image
+                    source={{ uri: estudiante.foto }}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                ) : (
+                  <Ionicons name="person" size={80} color={colors.primary} />
+                )}
               </View>
               <Text style={styles.labelNControl}>NO. DE CONTROL</Text>
               <Text style={styles.numeroControl}>{estudiante.noControl}</Text>

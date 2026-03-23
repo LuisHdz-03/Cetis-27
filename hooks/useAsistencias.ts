@@ -27,10 +27,13 @@ export const useAsistencias = () => {
 
       const data: AsistenciaMovil[] = await res.json();
 
-      // Guardamos la lista completa para el historial
+      // Chismoso para ver en tu terminal qué manda realmente la BD
+      if (data.length > 0) {
+        console.log("LA BD MANDA ESTE ESTATUS:", data[0].estatus);
+      }
+
       setAsistencias(data);
 
-      // Generamos las estadísticas basadas en la materia y el estatus
       const stats = procesarEstadisticas(data);
       setEstadisticasGrupos(stats);
     } catch (err) {
@@ -41,7 +44,6 @@ export const useAsistencias = () => {
     }
   }, []);
 
-  // Función interna para resumir los datos recibidos (Ahora usa materia y estatus)
   const procesarEstadisticas = (
     lista: AsistenciaMovil[],
   ): EstadisticasMateria[] => {
@@ -64,16 +66,26 @@ export const useAsistencias = () => {
       const item = mapa.get(nombreMateria)!;
       item.total++;
 
-      // Comparamos contra 'estatus' que es lo que manda el back
-      const estatus = a.estatus.toLowerCase();
-      if (estatus.includes("asistencia")) item.asistencias++;
-      else if (estatus.includes("falta")) item.faltas++;
-      else if (estatus.includes("retardo")) item.retardos++;
+      // MODO TODO TERRENO
+      const estatus = (a.estatus || "").toUpperCase().trim();
+
+      if (
+        estatus.includes("PRESENT") ||
+        estatus.includes("ASIST") ||
+        estatus === "A"
+      ) {
+        item.asistencias++;
+      } else if (estatus.includes("RETARD") || estatus === "R") {
+        item.retardos++;
+      } else if (estatus.includes("JUSTIFIC")) {
+        item.asistencias++; // Justificado cuenta como asistencia
+      } else {
+        item.faltas++;
+      }
     });
 
     return Array.from(mapa.values()).map((m) => ({
       ...m,
-      // Cálculo: (Asistencias + Retardos) / Total
       porcentajeAsistencia:
         m.total > 0
           ? Math.round(((m.asistencias + m.retardos) / m.total) * 100)
@@ -82,14 +94,21 @@ export const useAsistencias = () => {
   };
 
   const getIconForTipo = (tipo: string) => {
-    const t = tipo.toLowerCase();
-    if (t.includes("asistencia"))
+    const t = (tipo || "").toUpperCase().trim();
+
+    if (t.includes("PRESENT") || t.includes("ASIST") || t === "A") {
       return {
         name: "checkmark-circle" as const,
         color: colors.verdeAsistencia,
       };
-    if (t.includes("retardo"))
+    }
+    if (t.includes("RETARD") || t === "R") {
       return { name: "time-outline" as const, color: colors.naranjaRetardos };
+    }
+    if (t.includes("JUSTIFIC")) {
+      return { name: "document-text" as const, color: colors.primary };
+    }
+
     return { name: "close-circle" as const, color: colors.rojoFaltas };
   };
 

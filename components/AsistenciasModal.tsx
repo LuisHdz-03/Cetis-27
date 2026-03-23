@@ -1,6 +1,6 @@
 import { styles } from "@/constants/asistenciaStyles";
 import { colors } from "@/constants/colors";
-import { Asistencia, EstadisticasGrupo } from "@/hooks/useAsistencias";
+import { AsistenciaMovil, EstadisticasMateria } from "@/types/database";
 import React from "react";
 import {
   ActivityIndicator,
@@ -14,32 +14,46 @@ import {
 interface AsistenciasModalProps {
   visible: boolean;
   onClose: () => void;
-  asistenciasDetalladas: Asistencia[];
-  estadisticasMaterias: EstadisticasGrupo[];
+  asistenciasDetalladas: AsistenciaMovil[];
+  estadisticasMaterias?: EstadisticasMateria[]; // Opcional para que no marque error
   selectedMateria: string | null;
   isLoading: boolean;
   error: string | null;
-  getMonthYearString: () => string;
+  getMonthYearString?: () => string; // Opcional para evitar el crash de undefined
 }
 
 export default function AsistenciasModal({
   visible,
   onClose,
   asistenciasDetalladas,
-  estadisticasMaterias,
   selectedMateria,
   isLoading,
   error,
-  getMonthYearString,
 }: AsistenciasModalProps) {
+  // FUNCIÓN INTERNA: El modal calcula el mes por sí solo
+  const getCurrentMonthYear = () => {
+    const now = new Date();
+    const meses = [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre",
+    ];
+    return `${meses[now.getMonth()]} ${now.getFullYear()}`;
+  };
+
   const getTableData = () => {
     if (!asistenciasDetalladas || asistenciasDetalladas.length === 0) {
       return { fechasUnicas: [], tabla: {} };
     }
-
-    const fechasUnicas = Array.from(
-      new Set(asistenciasDetalladas.map((a) => a.fecha)),
-    ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     const tabla: Record<
       string,
@@ -53,7 +67,12 @@ export default function AsistenciasModal({
     > = {};
 
     asistenciasDetalladas.forEach((item) => {
-      const fechaKey = item.fecha.split("T")[0];
+      const dateObj = new Date(item.fecha);
+
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      const fechaKey = `${year}-${month}-${day}`;
 
       if (!tabla[fechaKey]) {
         tabla[fechaKey] = {
@@ -61,30 +80,25 @@ export default function AsistenciasModal({
           retardo: 0,
           falta: 0,
           fechaOriginal: item.fecha,
-        };
-      }
-
-      const tipo = (item.tipoAsistencia || "").toLowerCase();
-      if (tipo.includes("asistencia")) tabla[fechaKey].asistencia++;
-      else if (tipo.includes("retardo")) tabla[fechaKey].retardo++;
-      else if (tipo.includes("falta")) tabla[fechaKey].falta++;
-
-      if (!tabla[fechaKey].hora && item.horaRegistro) {
-        const horaRaw = item.horaRegistro;
-        try {
-          const dateObj = new Date(horaRaw);
-          const horaFormateada = dateObj.toLocaleTimeString([], {
+          hora: dateObj.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
-          });
-          tabla[fechaKey].hora =
-            horaFormateada !== "Invalid Date"
-              ? horaFormateada
-              : horaRaw.substring(11, 16);
-        } catch (e) {
-          tabla[fechaKey].hora = "";
-        }
+          }),
+        };
+      }
+
+      // MODO TODO TERRENO PARA LA TABLA EXCEL
+      const tipo = (item.estatus || "").toUpperCase().trim();
+
+      if (tipo.includes("PRESENT") || tipo.includes("ASIST") || tipo === "A") {
+        tabla[fechaKey].asistencia++;
+      } else if (tipo.includes("RETARD") || tipo === "R") {
+        tabla[fechaKey].retardo++;
+      } else if (tipo.includes("JUSTIFIC")) {
+        tabla[fechaKey].asistencia++;
+      } else {
+        tabla[fechaKey].falta++;
       }
     });
 
@@ -96,15 +110,15 @@ export default function AsistenciasModal({
 
   const { fechasUnicas, tabla } = getTableData();
 
-  const formatearFecha = (fecha: string) => {
+  const formatearFecha = (fechaOriginal: string) => {
     try {
-      const date = new Date(fecha);
+      const date = new Date(fechaOriginal);
       const day = String(date.getDate()).padStart(2, "0");
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
     } catch (error) {
-      return fecha;
+      return "Fecha inválida";
     }
   };
 
@@ -119,10 +133,8 @@ export default function AsistenciasModal({
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {estadisticasMaterias.find(
-                (m) => m.grupoIdString === selectedMateria,
-              )?.nombreMateria || "Materia"}{" "}
-              - {getMonthYearString()}
+              {/* Llamamos a la función interna segura */}
+              {selectedMateria || "Materia"} - {getCurrentMonthYear()}
             </Text>
           </View>
 
@@ -173,9 +185,9 @@ export default function AsistenciasModal({
                   </View>
                 </View>
 
-                {fechasUnicas.map((fecha, index) => (
+                {fechasUnicas.map((fechaKey, index) => (
                   <View
-                    key={fecha}
+                    key={fechaKey}
                     style={[
                       styles.tableRow,
                       index % 2 === 0 && styles.tableRowEven,
@@ -183,26 +195,28 @@ export default function AsistenciasModal({
                   >
                     <View style={[styles.cell, styles.firstColumn]}>
                       <Text style={styles.cellText}>
-                        {formatearFecha(fecha)}
+                        {formatearFecha(tabla[fechaKey].fechaOriginal)}
                       </Text>
-                      {tabla[fecha].hora && (
+                      {tabla[fechaKey].hora && (
                         <Text style={styles.cellTimeText}>
-                          {tabla[fecha].hora}
+                          {tabla[fechaKey].hora}
                         </Text>
                       )}
                     </View>
                     <View style={styles.cell}>
                       <Text style={styles.cellValue}>
-                        {tabla[fecha].asistencia}
+                        {tabla[fechaKey].asistencia}
                       </Text>
                     </View>
                     <View style={styles.cell}>
                       <Text style={styles.cellValue}>
-                        {tabla[fecha].retardo}
+                        {tabla[fechaKey].retardo}
                       </Text>
                     </View>
                     <View style={styles.cell}>
-                      <Text style={styles.cellValue}>{tabla[fecha].falta}</Text>
+                      <Text style={styles.cellValue}>
+                        {tabla[fechaKey].falta}
+                      </Text>
                     </View>
                   </View>
                 ))}

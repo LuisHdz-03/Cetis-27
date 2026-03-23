@@ -35,13 +35,7 @@ export default function CredencialScreen() {
     );
   }
 
-  // Debug: Verificar qué datos tiene la credencial
-  console.log("Credencial en componente:", {
-    curp: credencial.curp,
-    grupo: credencial.grupo,
-    turno: credencial.turno,
-    todosLosDatos: credencial,
-  });
+  console.log("[CREDENCIAL SCREEN] Foto en credencial:", credencial.foto);
 
   return (
     <View style={styles.container}>

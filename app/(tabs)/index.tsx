@@ -33,7 +33,7 @@ export default function PerfilScreen() {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -57,6 +57,9 @@ export default function PerfilScreen() {
   };
 
   const uploadImage = async (uri: string) => {
+    console.log("[UPLOAD] Iniciando subida de foto");
+    console.log("[UPLOAD] URI de imagen:", uri);
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -64,28 +67,46 @@ export default function PerfilScreen() {
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-      // @ts-ignore
-      formData.append("foto", { uri, name: filename, type });
+      console.log("[UPLOAD] Nombre de archivo:", filename);
+      console.log("[UPLOAD] Tipo de archivo:", type);
 
-      const response = await fetch(`${API_BASE_URL}/api/movil/foto`, {
-        method: "POST",
+      // @ts-ignore
+      formData.append("fotoPerfil", { uri, name: filename, type });
+
+      const endpoint = `${API_BASE_URL}/api/movil/perfil/foto`;
+      console.log("[UPLOAD] Endpoint:", endpoint);
+      console.log("[UPLOAD] Token presente:", token ? "Sí" : "No");
+
+      const response = await fetch(endpoint, {
+        method: "PUT",
         body: formData,
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log("[UPLOAD] Status de respuesta:", response.status);
+      console.log("[UPLOAD] Response OK:", response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[UPLOAD] Error del servidor:", errorData);
         throw new Error(errorData.error || "Error al subir la imagen");
       }
+
+      const responseData = await response.json();
+      console.log("[UPLOAD] Respuesta exitosa:", responseData);
 
       Alert.alert("Éxito", "Foto actualizada correctamente.");
       await refreshData();
     } catch (error: any) {
+      console.error("[UPLOAD] Error capturado:", error);
+      console.error("[UPLOAD] Mensaje de error:", error.message);
+      console.error("[UPLOAD] Stack:", error.stack);
       Alert.alert("Error", error.message || "Fallo al subir la imagen.");
     } finally {
       setUploading(false);
+      console.log("[UPLOAD] Proceso finalizado");
     }
   };
 
@@ -220,7 +241,6 @@ export default function PerfilScreen() {
   );
 }
 
-// Componente auxiliar para no repetir código de filas
 function InfoRow({
   label,
   value,

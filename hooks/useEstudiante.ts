@@ -34,22 +34,27 @@ export function useEstudiante() {
 
       const data = await res.json();
 
-      // El backend devuelve el estudiante con usuario, tutor y grupo anidados
       const estudianteFormateado: EstudianteCompleto = {
         idUsuario: String(data.usuarioId || data.idEstudiante || ""),
-        foto: data.fotoUrl ? `${API_BASE_URL}${data.fotoUrl}` : null,
+
+        foto: data.fotoUrl
+          ? data.fotoUrl.startsWith("http")
+            ? data.fotoUrl
+            : `${API_BASE_URL}${data.fotoUrl}`
+          : null,
 
         numeroControl: data.matricula || "Sin matrícula",
         nombreCompleto:
           `${data.usuario?.nombre || ""} ${data.usuario?.apellidoPaterno || ""} ${data.usuario?.apellidoMaterno || ""}`.trim(),
 
         especialidad: data.grupo?.especialidad?.nombre || "Sin especialidad",
-        semestre: data.semestre || data.grado || 1,
+
+        semestre: data.semestre || data.grupo?.grado || 1,
 
         email: data.usuario?.email || "",
         telefono: data.usuario?.telefono || "",
         direccion: data.usuario?.direccion || "",
-        curp: data.curp || "",
+        curp: data.usuario?.curp || "",
 
         grupoNombre: data.grupo?.nombre || "N/A",
         turno: data.grupo?.turno || "N/A",
