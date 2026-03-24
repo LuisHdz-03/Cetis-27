@@ -2,7 +2,7 @@ import { colors } from "@/constants/colors";
 import { styles } from "@/constants/credencialStyles";
 import { DatosCredencial } from "@/types/database";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   Modal,
@@ -13,6 +13,8 @@ import {
   ViewStyle,
 } from "react-native";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
+// 1. IMPORTAMOS LA LIBRERÍA DE QR
+import QRCode from "react-native-qrcode-svg";
 
 interface CredencialCardProps {
   estudiante: DatosCredencial;
@@ -31,7 +33,22 @@ export function CredencialCard({
 }: CredencialCardProps) {
   const [qrModalVisible, setQrModalVisible] = useState(false);
 
-  console.log("[CREDENCIAL CARD] Foto recibida:", estudiante.foto);
+  // 2. ESTADO PARA EL RELOJ INTERNO DEL QR
+  const [timestamp, setTimestamp] = useState(Date.now());
+
+  // 3. CRONÓMETRO: Refresca el tiempo cada 30 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimestamp(Date.now());
+    }, 30000); // 30000 ms = 30 segundos
+
+    return () => clearInterval(interval); // Limpieza al cerrar la app
+  }, []);
+
+  // 4. CREAMOS EL STRING DEL QR EN VIVO (Matricula|TiempoActual)
+  const qrStringSeguro = estudiante.noControl
+    ? `${estudiante.noControl}|${timestamp}`
+    : null;
 
   return (
     <TouchableOpacity
@@ -133,11 +150,11 @@ export function CredencialCard({
             activeOpacity={showBack ? 0.7 : 1}
             disabled={!showBack}
           >
-            {estudiante.qrImage ? (
-              <Image
-                source={{ uri: estudiante.qrImage }}
-                style={{ width: 70, height: 70 }}
-              />
+            {/* 5. APLICAMOS EL COMPONENTE QRCode AQUÍ */}
+            {qrStringSeguro ? (
+              <View style={{ backgroundColor: "white", padding: 2 }}>
+                <QRCode value={qrStringSeguro} size={66} />
+              </View>
             ) : (
               <Text style={styles.textoQR}>Sin QR</Text>
             )}
@@ -151,14 +168,12 @@ export function CredencialCard({
           </View>
         </View>
 
-        {/* --- SECCIÓN DIRECTOR (Restaurada) --- */}
         <View style={styles.cajaBox}>
           <Text style={styles.textoDirePlante}>DIRECTOR DEL PLANTEL</Text>
           <Text style={styles.textosCesarCastro}>CESAR CASTRO GARCIA</Text>
         </View>
         <View style={styles.nuevoDivisor} />
 
-        {/* --- SECCIÓN DIRECCIÓN (Restaurada) --- */}
         <View style={styles.stDirecciones}>
           <Text style={styles.labelDireccion}>DIRECCION DEL PLANTEL</Text>
           <Text style={styles.labelDosDirecc}>
@@ -175,12 +190,19 @@ export function CredencialCard({
           onPress={() => setQrModalVisible(false)}
         >
           <View style={styles.qrModalContent}>
-            {estudiante.qrImage && (
-              <Image
-                source={{ uri: estudiante.qrImage }}
-                style={{ width: 250, height: 250 }}
-              />
+            {/* 6. APLICAMOS EL COMPONENTE QRCode EN EL MODAL */}
+            {qrStringSeguro && (
+              <View
+                style={{
+                  backgroundColor: "white",
+                  padding: 15,
+                  borderRadius: 10,
+                }}
+              >
+                <QRCode value={qrStringSeguro} size={250} />
+              </View>
             )}
+
             <TouchableOpacity
               style={styles.qrModalCloseButton}
               onPress={() => setQrModalVisible(false)}

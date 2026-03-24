@@ -35,8 +35,6 @@ export default function CredencialScreen() {
     );
   }
 
-  console.log("[CREDENCIAL SCREEN] Foto en credencial:", credencial.foto);
-
   return (
     <View style={styles.container}>
       <CredencialCard
