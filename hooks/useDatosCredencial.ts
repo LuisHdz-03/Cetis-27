@@ -20,12 +20,9 @@ export function useDatosCredencial() {
         setCredencial(JSON.parse(cachedData));
         hasCache = true;
         setIsLoading(false);
-        console.log(
-          "[CREDENCIAL] Cargada desde el almacenamiento local (Offline)",
-        );
       }
     } catch (e) {
-      console.error("Error al leer caché de credencial:", e);
+      // Error silencioso al leer caché
     }
 
     if (!hasCache) {
@@ -54,17 +51,10 @@ export function useDatosCredencial() {
 
       setCredencial(data);
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
-      console.log(
-        "[CREDENCIAL] Datos actualizados desde internet y guardados.",
-      );
     } catch (err: any) {
       if (!hasCache) {
         setError(err.message || "Error al cargar la credencial");
         setCredencial(null);
-      } else {
-        console.log(
-          "⚠️ Sin internet: Usando la credencial guardada en el dispositivo.",
-        );
       }
     } finally {
       setIsLoading(false);

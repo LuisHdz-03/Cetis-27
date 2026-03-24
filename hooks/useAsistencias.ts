@@ -26,18 +26,11 @@ export const useAsistencias = () => {
       if (!res.ok) throw new Error("Error al obtener datos");
 
       const data: AsistenciaMovil[] = await res.json();
-
-      // Chismoso para ver en tu terminal qué manda realmente la BD
-      if (data.length > 0) {
-        console.log("LA BD MANDA ESTE ESTATUS:", data[0].estatus);
-      }
-
       setAsistencias(data);
 
       const stats = procesarEstadisticas(data);
       setEstadisticasGrupos(stats);
     } catch (err) {
-      console.error("Error useAsistencias:", err);
       setError("No se pudieron cargar las asistencias");
     } finally {
       setIsLoading(false);
@@ -78,7 +71,7 @@ export const useAsistencias = () => {
       } else if (estatus.includes("RETARD") || estatus === "R") {
         item.retardos++;
       } else if (estatus.includes("JUSTIFIC")) {
-        item.asistencias++; // Justificado cuenta como asistencia
+        item.asistencias++;
       } else {
         item.faltas++;
       }

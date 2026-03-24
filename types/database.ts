@@ -74,6 +74,8 @@ export interface EstudianteCompleto {
     nombre: string;
     telefono: string;
     parentesco: string;
+    email?: string;
+    direccion?: string;
   } | null;
 }
 

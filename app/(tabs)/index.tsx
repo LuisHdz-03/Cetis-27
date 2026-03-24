@@ -13,16 +13,32 @@ import {
   Image,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 export default function PerfilScreen() {
   const { logout, token } = useAuth();
-  const { estudiante, isLoading, error, refreshData } = useEstudiante();
+  // NUEVO: Nos aseguramos de traer registrarTutor de tu hook
+  const { estudiante, isLoading, error, refreshData, registrarTutor } =
+    useEstudiante();
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // NUEVO: Estado para el formulario del tutor
+  const [guardandoTutor, setGuardandoTutor] = useState(false);
+  const [formTutor, setFormTutor] = useState({
+    nombre: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
+    telefono: "",
+    parentesco: "",
+    email: "",
+    direccion: "",
+  });
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -65,9 +81,6 @@ export default function PerfilScreen() {
   };
 
   const uploadImage = async (uri: string) => {
-    console.log("[UPLOAD] Iniciando subida de foto");
-    console.log("[UPLOAD] URI de imagen:", uri);
-
     setUploading(true);
     try {
       const formData = new FormData();
@@ -75,16 +88,10 @@ export default function PerfilScreen() {
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-      console.log("[UPLOAD] Nombre de archivo:", filename);
-      console.log("[UPLOAD] Tipo de archivo:", type);
-
       // @ts-ignore
       formData.append("fotoPerfil", { uri, name: filename, type });
 
       const endpoint = `${API_BASE_URL}/api/movil/perfil/foto`;
-      console.log("[UPLOAD] Endpoint:", endpoint);
-      console.log("[UPLOAD] Token presente:", token ? "Sí" : "No");
-
       const response = await fetch(endpoint, {
         method: "PUT",
         body: formData,
@@ -93,29 +100,54 @@ export default function PerfilScreen() {
         },
       });
 
-      console.log("[UPLOAD] Status de respuesta:", response.status);
-      console.log("[UPLOAD] Response OK:", response.ok);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[UPLOAD] Error del servidor:", errorData);
         throw new Error(errorData.error || "Error al subir la imagen");
       }
-
-      const responseData = await response.json();
-      console.log("[UPLOAD] Respuesta exitosa:", responseData);
 
       Alert.alert("Éxito", "Foto actualizada correctamente.");
       await refreshData();
     } catch (error: any) {
-      console.error("[UPLOAD] Error capturado:", error);
-      console.error("[UPLOAD] Mensaje de error:", error.message);
-      console.error("[UPLOAD] Stack:", error.stack);
       Alert.alert("Error", error.message || "Fallo al subir la imagen.");
     } finally {
       setUploading(false);
-      console.log("[UPLOAD] Proceso finalizado");
     }
+  };
+
+  // NUEVO: Función para enviar los datos del tutor
+  const handleGuardarTutor = async () => {
+    if (
+      !formTutor.nombre ||
+      !formTutor.apellidoPaterno ||
+      !formTutor.telefono ||
+      !formTutor.parentesco
+    ) {
+      Alert.alert(
+        "Campos vacíos",
+        "Por favor llena todos los campos obligatorios.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Confirmar Registro",
+      "¿Estás seguro de que los datos son correctos? Esta acción no se puede deshacer desde la app.",
+      [
+        { text: "Revisar", style: "cancel" },
+        {
+          text: "Guardar",
+          style: "default",
+          onPress: async () => {
+            setGuardandoTutor(true);
+            const exito = await registrarTutor(formTutor);
+            setGuardandoTutor(false);
+            if (exito) {
+              Alert.alert("¡Listo!", "Tutor registrado correctamente.");
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleLogout = async () => {
@@ -189,7 +221,7 @@ export default function PerfilScreen() {
               </Text>
             </View>
 
-            {/* Sección Académica */}
+            {/* SECCIÓN ACADÉMICA */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="school" size={20} color={colors.primary} />
@@ -210,34 +242,143 @@ export default function PerfilScreen() {
               </View>
             </View>
 
-            {/* Sección Tutor (Si existe) */}
-            {estudiante?.tutor && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="people" size={20} color={colors.primary} />
-                  <Text style={styles.sectionTitle}>Tutor Legal</Text>
-                </View>
-                <View style={styles.infoCard}>
-                  <InfoRow
-                    label="Nombre"
-                    value={estudiante.tutor.nombre}
-                    icon="person-circle"
-                  />
-                  <View style={styles.divider} />
-                  <InfoRow
-                    label="Parentesco"
-                    value={estudiante.tutor.parentesco}
-                    icon="heart"
-                  />
-                  <View style={styles.divider} />
-                  <InfoRow
-                    label="Teléfono"
-                    value={estudiante.tutor.telefono}
-                    icon="call"
-                  />
-                </View>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="people" size={20} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Tutor Legal</Text>
               </View>
-            )}
+
+              <View style={styles.infoCard}>
+                {estudiante?.tutor ? (
+                  <>
+                    <InfoRow
+                      label="Nombre"
+                      value={estudiante.tutor.nombre}
+                      icon="person-circle"
+                    />
+                    <View style={styles.divider} />
+                    <InfoRow
+                      label="Parentesco"
+                      value={estudiante.tutor.parentesco}
+                      icon="heart"
+                    />
+                    <View style={styles.divider} />
+                    <InfoRow
+                      label="Teléfono"
+                      value={estudiante.tutor.telefono}
+                      icon="call"
+                    />
+                    {estudiante.tutor.email && (
+                      <>
+                        <View style={styles.divider} />
+                        <InfoRow
+                          label="Email"
+                          value={estudiante.tutor.email}
+                          icon="mail"
+                        />
+                      </>
+                    )}
+                    {estudiante.tutor.direccion && (
+                      <>
+                        <View style={styles.divider} />
+                        <InfoRow
+                          label="Dirección"
+                          value={estudiante.tutor.direccion}
+                          icon="location"
+                        />
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <View style={customStyles.formContainer}>
+                    <Text style={customStyles.formInstructions}>
+                      Registra los datos de tu tutor. Una vez guardados, no
+                      podrás editarlos.
+                    </Text>
+
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Nombre(s)*"
+                      value={formTutor.nombre}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, nombre: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Apellido Paterno*"
+                      value={formTutor.apellidoPaterno}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, apellidoPaterno: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Apellido Materno*"
+                      value={formTutor.apellidoMaterno}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, apellidoMaterno: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Teléfono a 10 dígitos*"
+                      keyboardType="numeric"
+                      maxLength={10}
+                      value={formTutor.telefono}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, telefono: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Parentesco (Ej: Padre, Madre)*"
+                      value={formTutor.parentesco}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, parentesco: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Email"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={formTutor.email}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, email: t })
+                      }
+                    />
+                    <TextInput
+                      style={customStyles.input}
+                      placeholder="Dirección"
+                      value={formTutor.direccion}
+                      placeholderTextColor={colors.primary}
+                      onChangeText={(t) =>
+                        setFormTutor({ ...formTutor, direccion: t })
+                      }
+                    />
+
+                    <TouchableOpacity
+                      style={customStyles.saveButton}
+                      onPress={handleGuardarTutor}
+                      disabled={guardandoTutor}
+                    >
+                      {guardandoTutor ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={customStyles.saveButtonText}>Guardar</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
 
             <View style={styles.logoutContainer}>
               <TouchableOpacity style={styles.button} onPress={handleLogout}>
@@ -276,3 +417,39 @@ function InfoRow({
     </View>
   );
 }
+
+// Pequeños estilos extra para el formulario para no romper tu homeStyles.ts principal
+const customStyles = StyleSheet.create({
+  formContainer: {
+    padding: 5,
+  },
+  formInstructions: {
+    color: colors.naranjaRetardos,
+    fontSize: 12,
+    marginBottom: 15,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  input: {
+    backgroundColor: colors.gray[100],
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    fontSize: 14,
+    color: colors.gray[800],
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 5,
+  },
+  saveButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+});

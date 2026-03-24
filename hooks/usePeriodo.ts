@@ -50,7 +50,6 @@ export function usePeriodo() {
           vigencia: data.vigencia,
         });
       } catch (err) {
-        console.error("Error:", err);
       } finally {
         setIsLoading(false);
       }

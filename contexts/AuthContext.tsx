@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(JSON.parse(storedUser));
         }
       } catch (e) {
-        console.error("Error cargando sesión:", e);
+        // Error silencioso al cargar sesión
       } finally {
         setLoading(false);
       }

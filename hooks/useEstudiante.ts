@@ -62,9 +62,11 @@ export function useEstudiante() {
         tutor: data.tutor
           ? {
               nombre:
-                `${data.tutor.nombre} ${data.tutor.apellidoPaterno || ""}`.trim(),
+                `${data.tutor.nombre} ${data.tutor.apellidoPaterno || ""} ${data.tutor.apellidoMaterno || ""}`.trim(),
               telefono: data.tutor.telefono || "",
               parentesco: data.tutor.parentesco || "Tutor",
+              email: data.tutor.email || undefined,
+              direccion: data.tutor.direccion || undefined,
             }
           : null,
       };
@@ -77,6 +79,51 @@ export function useEstudiante() {
     }
   };
 
+  const registrarTutor = async (datosTutor: {
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno: string;
+    telefono: string;
+    parentesco: string;
+    email?: string;
+    direccion?: string;
+  }) => {
+    try {
+      const currentToken = token || (await AsyncStorage.getItem("token"));
+      if (!currentToken) throw new Error("No hay sesión activa");
+
+      const res = await fetch(`${API_BASE_URL}/api/movil/perfil/tutor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify(datosTutor),
+      });
+
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type");
+        let errorMessage = "No se pudo registrar el tutor";
+
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          await res.text();
+          errorMessage = `Error ${res.status}: El endpoint no está disponible`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      await res.json();
+      await fetchEstudianteData();
+      return true;
+    } catch (err: any) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchEstudianteData();
   }, []);
@@ -86,5 +133,6 @@ export function useEstudiante() {
     isLoading,
     error,
     refreshData: fetchEstudianteData,
+    registrarTutor,
   };
 }
