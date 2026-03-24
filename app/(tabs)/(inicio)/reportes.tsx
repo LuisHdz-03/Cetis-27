@@ -3,6 +3,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -27,6 +28,7 @@ export default function ReportesScreen() {
   const [expandedCards, setExpandedCards] = useState<Set<string | number>>(
     new Set(),
   );
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchReportes();
@@ -38,6 +40,13 @@ export default function ReportesScreen() {
       fetchReportes();
     }, []),
   );
+
+  // Función para pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchReportes();
+    setRefreshing(false);
+  }, [fetchReportes]);
 
   // Función para expandir/colapsar una card
   const toggleCard = (id: string | number) => {
@@ -57,6 +66,14 @@ export default function ReportesScreen() {
       <ScrollView
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3498db"]}
+            tintColor={"#3498db"}
+          />
+        }
       >
         {isLoading ? (
           <View style={styles.centerBox}>

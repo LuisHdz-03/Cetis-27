@@ -12,6 +12,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -21,7 +22,6 @@ import {
 import RNPickerSelect from "react-native-picker-select";
 
 export default function AsistenciasScreen() {
-  // Estados locales para UI
   const [selectPicker, setSelectPicker] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMateria, setSelectedMateria] = useState<string | null>(null);
@@ -30,7 +30,8 @@ export default function AsistenciasScreen() {
   const [mesFiltro, setMesFiltro] = useState("");
   const [anioFiltro, setAnioFiltro] = useState("");
 
-  // Usamos solo lo que el nuevo hook simplificado nos da
+  const [refreshing, setRefreshing] = useState(false);
+
   const {
     asistencias,
     estadisticasGrupos,
@@ -39,14 +40,17 @@ export default function AsistenciasScreen() {
     fetchDatosAsistencia,
   } = useAsistencias();
 
-  // Cargamos los datos al entrar o enfocar la pantalla
   useFocusEffect(
     useCallback(() => {
       fetchDatosAsistencia();
     }, []),
   );
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchDatosAsistencia();
+    setRefreshing(false);
+  }, [fetchDatosAsistencia]);
 
-  // Generamos las opciones del Picker dinámicamente desde las estadísticas
   const opcionesMaterias = useMemo(() => {
     return estadisticasGrupos.map((est) => ({
       label: est.nombreMateria,
@@ -59,7 +63,6 @@ export default function AsistenciasScreen() {
     setModalVisible(true);
   };
 
-  // Filtramos las tarjetas según el Picker
   const gruposFiltrados = estadisticasGrupos.filter((grupo) => {
     if (selectPicker && grupo.nombreMateria !== selectPicker) return false;
     return true;
@@ -67,7 +70,17 @@ export default function AsistenciasScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <View style={styles.content}>
           <View style={styles.filterCard}>
             <Text style={styles.title}>Asistencias</Text>
@@ -78,7 +91,6 @@ export default function AsistenciasScreen() {
                 placeholder={{ label: "Todas las materias", value: null }}
                 value={selectPicker}
                 onValueChange={(value) => setSelectPicker(value)}
-                // SOLUCIÓN AL ERROR: Aseguramos que siempre sea un array
                 items={opcionesMaterias}
                 style={{
                   inputIOS: styles.pickerInput,
@@ -129,7 +141,8 @@ export default function AsistenciasScreen() {
             </View>
           </View>
 
-          {isLoading ? (
+          {/* NUEVO: Evitamos que salga el texto gigante de "Cargando..." si solo estamos haciendo Pull-to-Refresh */}
+          {isLoading && !refreshing ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.white} />
               <Text style={[styles.loadingText, { color: "white" }]}>
@@ -196,7 +209,6 @@ export default function AsistenciasScreen() {
           <AsistenciasModal
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
-            // Filtramos las asistencias detalladas para que el modal solo muestre las de esa materia
             asistenciasDetalladas={asistencias.filter(
               (a) => a.materia === selectedMateria,
             )}
@@ -204,24 +216,6 @@ export default function AsistenciasScreen() {
             selectedMateria={selectedMateria}
             isLoading={isLoading}
             error={error}
-            getMonthYearString={() => {
-              const now = new Date();
-              const meses = [
-                "Enero",
-                "Febrero",
-                "Marzo",
-                "Abril",
-                "Mayo",
-                "Junio",
-                "Julio",
-                "Agosto",
-                "Septiembre",
-                "Octubre",
-                "Noviembre",
-                "Diciembre",
-              ];
-              return `${meses[now.getMonth()]} ${now.getFullYear()}`;
-            }}
           />
         </View>
       </ScrollView>
@@ -229,7 +223,6 @@ export default function AsistenciasScreen() {
   );
 }
 
-// Componente pequeño para los items de estadísticas
 function StatItem({ icon, color, label, value }: any) {
   return (
     <View style={styles.statItem}>
