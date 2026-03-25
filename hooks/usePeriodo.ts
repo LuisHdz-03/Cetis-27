@@ -1,6 +1,8 @@
-import { API_BASE_URL } from "@/constants/api";
+import { credencialService } from "@/services/credencialService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+
+const CACHE_KEY = "@periodo_offline";
 
 interface FechasFormateadas {
   fechaEmision: string;
@@ -36,20 +38,36 @@ export function usePeriodo() {
 
   useEffect(() => {
     const fetchCredencial = async () => {
+      let hasCache = false;
+
+      // Primero intentar leer del caché
       try {
-        const token = await AsyncStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/api/movil/credencial`, {
-          // <--- Ruta de getCredencial
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          setDatosCredencial(JSON.parse(cachedData));
+          hasCache = true;
+          setIsLoading(false);
+        }
+      } catch (e) {
+        // Error silencioso al leer caché
+      }
 
-        const data = await res.json();
+      try {
+        const data = await credencialService.obtenerCredencial();
 
-        setDatosCredencial({
+        const periodoData = {
           fechaEmision: data.emision,
           vigencia: data.vigencia,
-        });
+        };
+
+        setDatosCredencial(periodoData);
+        // Guardar en caché para uso offline
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(periodoData));
       } catch (err) {
+        // Si no hay caché, error silencioso pero mantener loading en false
+        if (!hasCache) {
+          // Error silencioso
+        }
       } finally {
         setIsLoading(false);
       }

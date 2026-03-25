@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/constants/api";
+import { credencialService } from "@/services/credencialService";
 import type { DatosCredencial } from "@/types/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useState } from "react";
@@ -31,17 +32,7 @@ export function useDatosCredencial() {
     setError(null);
 
     try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) throw new Error("Sesión no válida");
-
-      const res = await fetch(`${API_BASE_URL}/api/movil/credencial`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok)
-        throw new Error("No se pudo obtener la credencial del servidor");
-
-      const data = await res.json();
+      const data = await credencialService.obtenerCredencial();
 
       if (data.fotoUrl) {
         data.foto = data.fotoUrl.startsWith("http")

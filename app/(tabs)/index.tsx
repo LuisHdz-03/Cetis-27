@@ -1,8 +1,8 @@
-import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { homeStyles as styles } from "@/constants/homeStyles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEstudiante } from "@/hooks/useEstudiante";
+import { estudianteService } from "@/services/estudianteService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -21,14 +22,22 @@ import {
 } from "react-native";
 
 export default function PerfilScreen() {
-  const { logout, token } = useAuth();
-  // NUEVO: Nos aseguramos de traer registrarTutor de tu hook
+  const { logout } = useAuth();
   const { estudiante, isLoading, error, refreshData, registrarTutor } =
     useEstudiante();
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // NUEVO: Estado para el formulario del tutor
+  // Estados para el menú de configuración
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [modalPasswordVisible, setModalPasswordVisible] = useState(false);
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    passwordActual: "",
+    passwordNueva: "",
+    passwordConfirmar: "",
+  });
+
   const [guardandoTutor, setGuardandoTutor] = useState(false);
   const [formTutor, setFormTutor] = useState({
     nombre: "",
@@ -91,19 +100,7 @@ export default function PerfilScreen() {
       // @ts-ignore
       formData.append("fotoPerfil", { uri, name: filename, type });
 
-      const endpoint = `${API_BASE_URL}/api/movil/perfil/foto`;
-      const response = await fetch(endpoint, {
-        method: "PUT",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al subir la imagen");
-      }
+      await estudianteService.subirFoto(formData);
 
       Alert.alert("Éxito", "Foto actualizada correctamente.");
       await refreshData();
@@ -114,7 +111,6 @@ export default function PerfilScreen() {
     }
   };
 
-  // NUEVO: Función para enviar los datos del tutor
   const handleGuardarTutor = async () => {
     if (
       !formTutor.nombre ||
@@ -164,6 +160,48 @@ export default function PerfilScreen() {
     ]);
   };
 
+  const handleCambiarPassword = async () => {
+    const { passwordActual, passwordNueva, passwordConfirmar } = passwordForm;
+
+    if (!passwordActual || !passwordNueva || !passwordConfirmar) {
+      Alert.alert("Error", "Todos los campos son obligatorios");
+      return;
+    }
+
+    if (passwordNueva.length < 6) {
+      Alert.alert(
+        "Error",
+        "La nueva contraseña debe tener al menos 6 caracteres",
+      );
+      return;
+    }
+
+    if (passwordNueva !== passwordConfirmar) {
+      Alert.alert("Error", "Las contraseñas nuevas no coinciden");
+      return;
+    }
+
+    setCambiandoPassword(true);
+    try {
+      await estudianteService.cambiarPassword({
+        passwordActual,
+        passwordNueva,
+      });
+
+      Alert.alert("¡Éxito!", "Contraseña actualizada correctamente");
+      setModalPasswordVisible(false);
+      setPasswordForm({
+        passwordActual: "",
+        passwordNueva: "",
+        passwordConfirmar: "",
+      });
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "No se pudo cambiar la contraseña");
+    } finally {
+      setCambiandoPassword(false);
+    }
+  };
+
   return (
     <View style={styles.safeArea}>
       <ScrollView
@@ -195,6 +233,17 @@ export default function PerfilScreen() {
         ) : (
           <>
             <View style={styles.profileHeader}>
+              <TouchableOpacity
+                style={headerStyles.settingsButtonInProfile}
+                onPress={() => setMenuVisible(true)}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={26}
+                  color={colors.primary}
+                />
+              </TouchableOpacity>
+
               <TouchableOpacity onPress={pickImage} disabled={uploading}>
                 <View style={[styles.avatarContainer, { overflow: "hidden" }]}>
                   {uploading ? (
@@ -379,21 +428,156 @@ export default function PerfilScreen() {
                 )}
               </View>
             </View>
-
-            <View style={styles.logoutContainer}>
-              <TouchableOpacity style={styles.button} onPress={handleLogout}>
-                <Ionicons
-                  name="log-out"
-                  size={20}
-                  color="white"
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.buttonText}>Cerrar Sesión</Text>
-              </TouchableOpacity>
-            </View>
           </>
         )}
       </ScrollView>
+
+      {/* Modal de menú de opciones */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={modalStyles.overlay}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={modalStyles.menuContainer}>
+            <Text style={modalStyles.menuTitle}>Configuración</Text>
+
+            <TouchableOpacity
+              style={modalStyles.menuOption}
+              onPress={() => {
+                setMenuVisible(false);
+                setModalPasswordVisible(true);
+              }}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color={colors.primary}
+              />
+              <Text style={modalStyles.menuOptionText}>Cambiar Contraseña</Text>
+            </TouchableOpacity>
+
+            <View style={modalStyles.divider} />
+
+            <TouchableOpacity
+              style={[modalStyles.menuOption, { borderBottomWidth: 0 }]}
+              onPress={() => {
+                setMenuVisible(false);
+                handleLogout();
+              }}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={colors.red[600]}
+              />
+              <Text
+                style={[modalStyles.menuOptionText, { color: colors.red[600] }]}
+              >
+                Cerrar Sesión
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={modalStyles.cancelButton}
+              onPress={() => setMenuVisible(false)}
+            >
+              <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Modal de cambio de contraseña */}
+      <Modal
+        visible={modalPasswordVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalPasswordVisible(false)}
+      >
+        <TouchableOpacity
+          style={modalStyles.overlay}
+          activeOpacity={1}
+          onPress={() => setModalPasswordVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={modalStyles.passwordContainer}>
+              <View style={modalStyles.passwordHeader}>
+                <Text style={modalStyles.passwordTitle}>
+                  Cambiar Contraseña
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setModalPasswordVisible(false)}
+                >
+                  <Ionicons name="close" size={28} color={colors.gray[600]} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={modalStyles.passwordInstruction}>
+                La contraseña debe tener al menos 6 caracteres
+              </Text>
+
+              <TextInput
+                style={modalStyles.passwordInput}
+                placeholder="Contraseña actual*"
+                placeholderTextColor={colors.gray[400]}
+                secureTextEntry
+                value={passwordForm.passwordActual}
+                onChangeText={(t) =>
+                  setPasswordForm({ ...passwordForm, passwordActual: t })
+                }
+              />
+
+              <TextInput
+                style={modalStyles.passwordInput}
+                placeholder="Nueva contraseña*"
+                placeholderTextColor={colors.gray[400]}
+                secureTextEntry
+                value={passwordForm.passwordNueva}
+                onChangeText={(t) =>
+                  setPasswordForm({ ...passwordForm, passwordNueva: t })
+                }
+              />
+
+              <TextInput
+                style={modalStyles.passwordInput}
+                placeholder="Confirmar nueva contraseña*"
+                placeholderTextColor={colors.gray[400]}
+                secureTextEntry
+                value={passwordForm.passwordConfirmar}
+                onChangeText={(t) =>
+                  setPasswordForm({ ...passwordForm, passwordConfirmar: t })
+                }
+              />
+
+              <TouchableOpacity
+                style={[
+                  modalStyles.passwordButton,
+                  cambiandoPassword && { opacity: 0.6 },
+                ]}
+                onPress={handleCambiarPassword}
+                disabled={cambiandoPassword}
+              >
+                {cambiandoPassword ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={modalStyles.passwordButtonText}>
+                    Actualizar Contraseña
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -451,5 +635,117 @@ const customStyles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 14,
+  },
+});
+
+// Estilos para el engrane de configuración en el perfil
+const headerStyles = StyleSheet.create({
+  settingsButtonInProfile: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+});
+
+// Estilos para los modales
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  menuContainer: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  menuTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.gray[800],
+    marginBottom: 15,
+  },
+  menuOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+  },
+  menuOptionText: {
+    fontSize: 16,
+    color: colors.gray[700],
+    marginLeft: 15,
+    fontWeight: "500",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.gray[200],
+  },
+  cancelButton: {
+    marginTop: 10,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: colors.gray[600],
+    fontWeight: "500",
+  },
+  passwordContainer: {
+    backgroundColor: "white",
+    marginHorizontal: 20,
+    borderRadius: 15,
+    padding: 20,
+    marginTop: "50%",
+  },
+  passwordHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  passwordTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: colors.gray[800],
+  },
+  passwordInstruction: {
+    fontSize: 13,
+    color: colors.gray[600],
+    marginBottom: 20,
+    fontStyle: "italic",
+  },
+  passwordInput: {
+    backgroundColor: colors.gray[100],
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    fontSize: 15,
+    color: colors.gray[800],
+  },
+  passwordButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  passwordButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });

@@ -1,8 +1,15 @@
 import { API_BASE_URL } from "@/constants/api";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  estudianteService,
+  type RegistrarTutorData,
+} from "@/services/estudianteService";
 import type { EstudianteCompleto } from "@/types/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+// Llave para guardar el perfil en caché offline
+const CACHE_KEY = "@estudiante_perfil_offline";
 
 export function useEstudiante() {
   const { token } = useAuth();
@@ -10,29 +17,30 @@ export function useEstudiante() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEstudianteData = async () => {
+  const fetchEstudianteData = useCallback(async () => {
+    let hasCache = false;
+
+    // Primero intentar leer del caché
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const currentToken = token || (await AsyncStorage.getItem("token"));
-
-      if (!currentToken) {
-        throw new Error("No hay sesión activa");
+      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+      if (cachedData) {
+        setEstudiante(JSON.parse(cachedData));
+        hasCache = true;
+        setIsLoading(false);
       }
+    } catch (e) {
+      // Error silencioso al leer caché
+    }
 
-      const res = await fetch(`${API_BASE_URL}/api/movil/perfil`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
+    // Si no hay caché, mostrar loading
+    if (!hasCache) {
+      setIsLoading(true);
+    }
+    setError(null);
 
-      if (!res.ok)
-        throw new Error("No se pudo obtener el perfil del estudiante");
-
-      const data = await res.json();
+    // Intentar obtener datos frescos de la API
+    try {
+      const data = await estudianteService.obtenerPerfil();
 
       const estudianteFormateado: EstudianteCompleto = {
         idUsuario: String(data.usuarioId || data.idEstudiante || ""),
@@ -72,51 +80,25 @@ export function useEstudiante() {
       };
 
       setEstudiante(estudianteFormateado);
+      // Guardar en caché para uso offline
+      await AsyncStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify(estudianteFormateado),
+      );
     } catch (err: any) {
-      setError(err.message || "Error al cargar datos");
+      // Si hay caché, no mostramos error (datos offline disponibles)
+      if (!hasCache) {
+        setError(err.message || "Error al cargar datos");
+        setEstudiante(null);
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const registrarTutor = async (datosTutor: {
-    nombre: string;
-    apellidoPaterno: string;
-    apellidoMaterno: string;
-    telefono: string;
-    parentesco: string;
-    email?: string;
-    direccion?: string;
-  }) => {
+  const registrarTutor = async (datosTutor: RegistrarTutorData) => {
     try {
-      const currentToken = token || (await AsyncStorage.getItem("token"));
-      if (!currentToken) throw new Error("No hay sesión activa");
-
-      const res = await fetch(`${API_BASE_URL}/api/movil/perfil/tutor`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentToken}`,
-        },
-        body: JSON.stringify(datosTutor),
-      });
-
-      if (!res.ok) {
-        const contentType = res.headers.get("content-type");
-        let errorMessage = "No se pudo registrar el tutor";
-
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorMessage;
-        } else {
-          await res.text();
-          errorMessage = `Error ${res.status}: El endpoint no está disponible`;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      await res.json();
+      await estudianteService.registrarTutor(datosTutor);
       await fetchEstudianteData();
       return true;
     } catch (err: any) {
@@ -126,7 +108,7 @@ export function useEstudiante() {
 
   useEffect(() => {
     fetchEstudianteData();
-  }, []);
+  }, [fetchEstudianteData]);
 
   return {
     estudiante,

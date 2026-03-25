@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/constants/api";
+import { login as authLogin } from "@/services/authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -64,23 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/web/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-          plataforma: "MOVIL",
-        }),
-      });
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("El servidor no responde (Error de Red)");
-      }
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Credenciales inválidas");
+      const data = await authLogin(email, password);
 
       const userData: User = {
         id: String(data.usuario.id),
@@ -92,10 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           : undefined,
       };
 
-      await Promise.all([
-        AsyncStorage.setItem("token", data.token),
-        AsyncStorage.setItem("user", JSON.stringify(userData)),
-      ]);
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
 
       setToken(data.token);
       setUser(userData);

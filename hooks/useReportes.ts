@@ -1,9 +1,12 @@
-import { API_BASE_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportesService } from "@/services/reportesService";
 import type { EstatusReporte, ReporteDetallado } from "@/types/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useState } from "react";
+
+// Llave para guardar reportes en caché offline
+const CACHE_KEY = "@reportes_offline";
 
 export interface SeverityConfig {
   bgColor: string;
@@ -26,27 +29,33 @@ export const useReportes = () => {
   const { token } = useAuth();
 
   const fetchReportes = useCallback(async () => {
+    let hasCache = false;
+
+    // Primero intentar leer del caché
+    try {
+      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+      if (cachedData) {
+        setReportes(JSON.parse(cachedData));
+        hasCache = true;
+      }
+    } catch (e) {
+      // Error silencioso al leer caché
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const currentToken = token || (await AsyncStorage.getItem("token"));
-      if (!currentToken) throw new Error("Sesión no válida");
-
-      // NUEVA RUTA: Ahora apuntamos al endpoint de móvil sin pasar IDs
-      const res = await fetch(`${API_BASE_URL}/api/movil/reportes`, {
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) throw new Error("No se pudieron obtener los reportes");
-
-      const data = await res.json();
+      const data = await reportesService.obtenerReportes();
       setReportes(data);
+
+      // Guardar en caché para uso offline
+      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
     } catch (err: any) {
-      setError(err.message || "Error al cargar reportes");
-      setReportes([]);
+      // Si hay caché, no mostramos error (datos offline disponibles)
+      if (!hasCache) {
+        setError(err.message || "Error al cargar reportes");
+        setReportes([]);
+      }
     } finally {
       setIsLoading(false);
     }
