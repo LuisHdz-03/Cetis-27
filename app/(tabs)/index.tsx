@@ -14,7 +14,6 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -234,7 +233,7 @@ export default function PerfilScreen() {
           <>
             <View style={styles.profileHeader}>
               <TouchableOpacity
-                style={headerStyles.settingsButtonInProfile}
+                style={styles.settingsButtonInProfile}
                 onPress={() => setMenuVisible(true)}
               >
                 <Ionicons
@@ -339,14 +338,14 @@ export default function PerfilScreen() {
                     )}
                   </>
                 ) : (
-                  <View style={customStyles.formContainer}>
-                    <Text style={customStyles.formInstructions}>
+                  <View style={styles.formContainer}>
+                    <Text style={styles.formInstructions}>
                       Registra los datos de tu tutor. Una vez guardados, no
                       podrás editarlos.
                     </Text>
 
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Nombre(s)*"
                       value={formTutor.nombre}
                       placeholderTextColor={colors.primary}
@@ -355,7 +354,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Apellido Paterno*"
                       value={formTutor.apellidoPaterno}
                       placeholderTextColor={colors.primary}
@@ -364,7 +363,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Apellido Materno*"
                       value={formTutor.apellidoMaterno}
                       placeholderTextColor={colors.primary}
@@ -373,7 +372,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Teléfono a 10 dígitos*"
                       keyboardType="numeric"
                       maxLength={10}
@@ -384,7 +383,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Parentesco (Ej: Padre, Madre)*"
                       value={formTutor.parentesco}
                       placeholderTextColor={colors.primary}
@@ -393,7 +392,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Email"
                       keyboardType="email-address"
                       autoCapitalize="none"
@@ -404,7 +403,7 @@ export default function PerfilScreen() {
                       }
                     />
                     <TextInput
-                      style={customStyles.input}
+                      style={styles.input}
                       placeholder="Dirección"
                       value={formTutor.direccion}
                       placeholderTextColor={colors.primary}
@@ -414,14 +413,14 @@ export default function PerfilScreen() {
                     />
 
                     <TouchableOpacity
-                      style={customStyles.saveButton}
+                      style={styles.saveButton}
                       onPress={handleGuardarTutor}
                       disabled={guardandoTutor}
                     >
                       {guardandoTutor ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
-                        <Text style={customStyles.saveButtonText}>Guardar</Text>
+                        <Text style={styles.saveButtonText}>Guardar</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -440,15 +439,15 @@ export default function PerfilScreen() {
         onRequestClose={() => setMenuVisible(false)}
       >
         <TouchableOpacity
-          style={modalStyles.overlay}
+          style={styles.overlay}
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View style={modalStyles.menuContainer}>
-            <Text style={modalStyles.menuTitle}>Configuración</Text>
+          <View style={styles.menuContainer}>
+            <Text style={styles.menuTitle}>Configuración</Text>
 
             <TouchableOpacity
-              style={modalStyles.menuOption}
+              style={styles.menuOption}
               onPress={() => {
                 setMenuVisible(false);
                 setModalPasswordVisible(true);
@@ -459,13 +458,13 @@ export default function PerfilScreen() {
                 size={22}
                 color={colors.primary}
               />
-              <Text style={modalStyles.menuOptionText}>Cambiar Contraseña</Text>
+              <Text style={styles.menuOptionText}>Cambiar Contraseña</Text>
             </TouchableOpacity>
 
-            <View style={modalStyles.divider} />
+            <View style={styles.divider} />
 
             <TouchableOpacity
-              style={[modalStyles.menuOption, { borderBottomWidth: 0 }]}
+              style={[styles.menuOption, { borderBottomWidth: 0 }]}
               onPress={() => {
                 setMenuVisible(false);
                 handleLogout();
@@ -476,18 +475,16 @@ export default function PerfilScreen() {
                 size={22}
                 color={colors.red[600]}
               />
-              <Text
-                style={[modalStyles.menuOptionText, { color: colors.red[600] }]}
-              >
+              <Text style={[styles.menuOptionText, { color: colors.red[600] }]}>
                 Cerrar Sesión
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={modalStyles.cancelButton}
+              style={styles.cancelButton}
               onPress={() => setMenuVisible(false)}
             >
-              <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -501,7 +498,7 @@ export default function PerfilScreen() {
         onRequestClose={() => setModalPasswordVisible(false)}
       >
         <TouchableOpacity
-          style={modalStyles.overlay}
+          style={styles.overlay}
           activeOpacity={1}
           onPress={() => setModalPasswordVisible(false)}
         >
@@ -509,11 +506,9 @@ export default function PerfilScreen() {
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
-            <View style={modalStyles.passwordContainer}>
-              <View style={modalStyles.passwordHeader}>
-                <Text style={modalStyles.passwordTitle}>
-                  Cambiar Contraseña
-                </Text>
+            <View style={styles.passwordContainer}>
+              <View style={styles.passwordHeader}>
+                <Text style={styles.passwordTitle}>Cambiar Contraseña</Text>
                 <TouchableOpacity
                   onPress={() => setModalPasswordVisible(false)}
                 >
@@ -521,12 +516,12 @@ export default function PerfilScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={modalStyles.passwordInstruction}>
+              <Text style={styles.passwordInstruction}>
                 La contraseña debe tener al menos 6 caracteres
               </Text>
 
               <TextInput
-                style={modalStyles.passwordInput}
+                style={styles.passwordInput}
                 placeholder="Contraseña actual*"
                 placeholderTextColor={colors.gray[400]}
                 secureTextEntry
@@ -537,7 +532,7 @@ export default function PerfilScreen() {
               />
 
               <TextInput
-                style={modalStyles.passwordInput}
+                style={styles.passwordInput}
                 placeholder="Nueva contraseña*"
                 placeholderTextColor={colors.gray[400]}
                 secureTextEntry
@@ -548,7 +543,7 @@ export default function PerfilScreen() {
               />
 
               <TextInput
-                style={modalStyles.passwordInput}
+                style={styles.passwordInput}
                 placeholder="Confirmar nueva contraseña*"
                 placeholderTextColor={colors.gray[400]}
                 secureTextEntry
@@ -560,7 +555,7 @@ export default function PerfilScreen() {
 
               <TouchableOpacity
                 style={[
-                  modalStyles.passwordButton,
+                  styles.passwordButton,
                   cambiandoPassword && { opacity: 0.6 },
                 ]}
                 onPress={handleCambiarPassword}
@@ -569,7 +564,7 @@ export default function PerfilScreen() {
                 {cambiandoPassword ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Text style={modalStyles.passwordButtonText}>
+                  <Text style={styles.passwordButtonText}>
                     Actualizar Contraseña
                   </Text>
                 )}
@@ -601,151 +596,3 @@ function InfoRow({
     </View>
   );
 }
-
-// Pequeños estilos extra para el formulario para no romper tu homeStyles.ts principal
-const customStyles = StyleSheet.create({
-  formContainer: {
-    padding: 5,
-  },
-  formInstructions: {
-    color: colors.naranjaRetardos,
-    fontSize: 12,
-    marginBottom: 15,
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  input: {
-    backgroundColor: colors.gray[100],
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    fontSize: 14,
-    color: colors.gray[800],
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 5,
-  },
-  saveButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-});
-
-// Estilos para el engrane de configuración en el perfil
-const headerStyles = StyleSheet.create({
-  settingsButtonInProfile: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-});
-
-// Estilos para los modales
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  menuContainer: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  menuTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.gray[800],
-    marginBottom: 15,
-  },
-  menuOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-  },
-  menuOptionText: {
-    fontSize: 16,
-    color: colors.gray[700],
-    marginLeft: 15,
-    fontWeight: "500",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.gray[200],
-  },
-  cancelButton: {
-    marginTop: 10,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: colors.gray[600],
-    fontWeight: "500",
-  },
-  passwordContainer: {
-    backgroundColor: "white",
-    marginHorizontal: 20,
-    borderRadius: 15,
-    padding: 20,
-    marginTop: "50%",
-  },
-  passwordHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  passwordTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: colors.gray[800],
-  },
-  passwordInstruction: {
-    fontSize: 13,
-    color: colors.gray[600],
-    marginBottom: 20,
-    fontStyle: "italic",
-  },
-  passwordInput: {
-    backgroundColor: colors.gray[100],
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    fontSize: 15,
-    color: colors.gray[800],
-  },
-  passwordButton: {
-    backgroundColor: colors.primary,
-    padding: 16,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  passwordButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-});
