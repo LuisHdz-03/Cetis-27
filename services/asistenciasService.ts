@@ -8,7 +8,7 @@ export const asistenciasService = {
    * Obtener asistencias del estudiante
    */
   obtenerAsistencias: async () => {
-    return apiRequest("/api/movil/asistencia", {
+    return apiRequest("/api/movil/asistencias", {
       method: "GET",
     });
   },
