@@ -19,13 +19,13 @@ export interface LoginResponse {
  * Login con email y contraseña, devuelve token y datos del usuario
  */
 export const login = async (
-  email: string,
+  username: string,
   password: string
 ): Promise<LoginResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/web/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), password, plataforma: "MOVIL" }),
+    body: JSON.stringify({ username: username.trim(), password, plataforma: "MOVIL" }),
   });
 
   const contentType = response.headers.get("content-type");

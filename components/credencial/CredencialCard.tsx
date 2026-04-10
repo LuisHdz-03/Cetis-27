@@ -12,9 +12,8 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import Animated, { AnimatedStyle } from "react-native-reanimated";
-// 1. IMPORTAMOS LA LIBRERÍA DE QR
 import QRCode from "react-native-qrcode-svg";
+import Animated, { AnimatedStyle } from "react-native-reanimated";
 
 interface CredencialCardProps {
   estudiante: DatosCredencial;
