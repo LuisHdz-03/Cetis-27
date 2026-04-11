@@ -1,3 +1,4 @@
+// ...existing code...
 import { colors } from "@/constants/colors";
 import { homeStyles as styles } from "@/constants/homeStyles";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +47,13 @@ export default function PerfilScreen() {
     parentesco: "",
     email: "",
     direccion: "",
+  });
+
+  const [guardandoContacto, setGuardandoContacto] = useState(false);
+  const [formContacto, setFormContacto] = useState({
+    email: estudiante?.email || "",
+    telefono: estudiante?.telefono || "",
+    direccion: estudiante?.direccion || "",
   });
 
   const onRefresh = async () => {
@@ -201,6 +209,23 @@ export default function PerfilScreen() {
     }
   };
 
+  const handleGuardarContacto = async () => {
+    if (!formContacto.email && !formContacto.telefono && !formContacto.direccion) {
+      Alert.alert("Nada que guardar", "Debes ingresar al menos un dato de contacto.");
+      return;
+    }
+    setGuardandoContacto(true);
+    try {
+      await estudianteService.actualizarContacto(formContacto);
+      Alert.alert("¡Listo!", "Datos de contacto actualizados.");
+      await refreshData();
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "No se pudo actualizar el contacto");
+    } finally {
+      setGuardandoContacto(false);
+    }
+  };
+
   return (
     <View style={styles.safeArea}>
       <ScrollView
@@ -290,6 +315,59 @@ export default function PerfilScreen() {
               </View>
             </View>
 
+            {/* Sección de contacto del alumno */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="call" size={20} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Contacto del Alumno</Text>
+              </View>
+              <View style={styles.infoCard}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={formContacto.email}
+                  placeholderTextColor={colors.primary}
+                  onChangeText={(t) =>
+                    setFormContacto({ ...formContacto, email: t })
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Teléfono a 10 dígitos"
+                  keyboardType="numeric"
+                  maxLength={10}
+                  value={formContacto.telefono}
+                  placeholderTextColor={colors.primary}
+                  onChangeText={(t) =>
+                    setFormContacto({ ...formContacto, telefono: t })
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Dirección"
+                  value={formContacto.direccion}
+                  placeholderTextColor={colors.primary}
+                  onChangeText={(t) =>
+                    setFormContacto({ ...formContacto, direccion: t })
+                  }
+                />
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleGuardarContacto}
+                  disabled={guardandoContacto}
+                >
+                  {guardandoContacto ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Guardar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sección de tutor legal */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="people" size={20} color={colors.primary} />

@@ -54,4 +54,14 @@ export const estudianteService = {
       body: JSON.stringify(datos),
     });
   },
+
+  /**
+   * Actualizar datos de contacto del alumno
+   */
+  actualizarContacto: async (datos: { email?: string; telefono?: string; direccion?: string }) => {
+    return apiRequest("/api/movil/perfil/contacto", {
+      method: "PUT",
+      body: JSON.stringify(datos),
+    });
+  },
 };

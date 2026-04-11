@@ -60,7 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     loadStorageData();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (
+    username: string,
+    password: string,
+  ): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
@@ -98,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         "estudianteId",
         "userId",
         "userEmail",
+        "@credencial_offline",
       ]);
       setToken(null);
       setUser(null);
